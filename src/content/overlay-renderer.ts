@@ -10,12 +10,13 @@ export interface OverlayActions {
 }
 
 type MessageLookup = (key: string) => string;
+type OverlayAnchor = DOMRect | (() => DOMRect | null);
 
 export class OverlayRenderer {
   private host: HTMLElement | null = null;
   private root: ShadowRoot | null = null;
   private card: HTMLElement | null = null;
-  private anchorRect: DOMRect | null = null;
+  private anchor: OverlayAnchor | null = null;
   private listening = false;
   private isPinned = false;
 
@@ -29,12 +30,12 @@ export class OverlayRenderer {
     return this.isPinned;
   }
 
-  render(state: TranslationState, anchorRect: DOMRect): void {
+  render(state: TranslationState, anchor: OverlayAnchor): void {
     this.ensureMounted();
-    this.anchorRect = anchorRect;
+    this.anchor = anchor;
     this.card!.replaceChildren(this.renderState(state));
     this.positionCard();
-    this.startViewportListeners();
+    if (this.host) this.startViewportListeners();
   }
 
   setPinned(pinned: boolean): void {
@@ -62,7 +63,7 @@ export class OverlayRenderer {
     this.host = null;
     this.root = null;
     this.card = null;
-    this.anchorRect = null;
+    this.anchor = null;
     this.isPinned = false;
   }
 
@@ -95,6 +96,9 @@ export class OverlayRenderer {
     switch (state.kind) {
       case 'preparing':
         this.renderPreparing(fragment, state.progress);
+        return fragment;
+      case 'activation-required':
+        this.renderActivationRequired(fragment);
         return fragment;
       case 'translating':
         this.renderTranslating(fragment, state.sourceLanguage);
@@ -142,6 +146,24 @@ export class OverlayRenderer {
     text.className = 'text notice';
     text.textContent = this.message('translating');
     fragment.append(header, text, this.createCloseActions());
+  }
+
+  private renderActivationRequired(fragment: DocumentFragment): void {
+    const text = this.doc.createElement('p');
+    text.className = 'text notice';
+    text.textContent = this.message('activationRequired');
+    const actions = this.createActionRow();
+    actions.append(
+      this.createButton(
+        'activate',
+        this.message('prepareTranslation'),
+        this.message('prepareTranslation'),
+        () => this.actions.onRetry(),
+      ),
+      this.createSpacer(),
+      this.createCloseButton(),
+    );
+    fragment.append(text, actions);
   }
 
   private renderSuccess(
@@ -263,9 +285,16 @@ export class OverlayRenderer {
   }
 
   private positionCard = (): void => {
-    if (!this.card || !this.anchorRect) return;
+    if (!this.card || !this.anchor) return;
+    const anchorRect =
+      typeof this.anchor === 'function' ? this.anchor() : this.anchor;
+    if (!anchorRect) {
+      this.close();
+      this.actions.onClose();
+      return;
+    }
     const overlayRect = this.card.getBoundingClientRect();
-    const { left, top } = this.position(this.anchorRect, overlayRect);
+    const { left, top } = this.position(anchorRect, overlayRect);
     this.card.style.left = `${left}px`;
     this.card.style.top = `${top}px`;
   };

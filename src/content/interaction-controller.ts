@@ -2,6 +2,7 @@ import type { SupportedLanguage } from '../shared/languages';
 import type { ExtensionSettings } from '../shared/settings';
 import type {
   TerminalTranslationState,
+  TranslationOptions,
   TranslationState,
 } from '../translation/types';
 import type { TextCandidate } from './text-extractor';
@@ -15,13 +16,17 @@ export interface TranslationPort {
     text: string,
     target: SupportedLanguage,
     onState: (state: TranslationState) => void,
+    options?: TranslationOptions,
   ): Promise<TerminalTranslationState>;
   destroy(): void;
 }
 
 export interface OverlayPort {
   readonly pinned: boolean;
-  render(state: TranslationState, rect: DOMRect): void;
+  render(
+    state: TranslationState,
+    anchor: DOMRect | (() => DOMRect | null),
+  ): void;
   containsEvent(event: Event): boolean;
   close(): void;
   destroy(): void;
@@ -40,6 +45,7 @@ export class InteractionController {
   private requestId = 0;
   private lastCandidate: TextCandidate | null = null;
   private activeHoverElement: Element | null = null;
+  private pendingHoverCandidate: TextCandidate | null = null;
   private hoverOpenTimer: number | null = null;
   private hoverCloseTimer: number | null = null;
   private sameLanguageTimer: number | null = null;
@@ -97,7 +103,7 @@ export class InteractionController {
 
   retry(): void {
     if (!this.lastCandidate) return;
-    this.runCandidate(this.lastCandidate);
+    this.runCandidate(this.lastCandidate, true);
   }
 
   close(): void {
@@ -154,51 +160,53 @@ export class InteractionController {
 
   private runSelection(): void {
     const candidate = this.selectionExtractor(this.doc.getSelection());
-    if (candidate) this.runCandidate(candidate);
+    if (candidate) this.runCandidate(candidate, true);
   }
 
   private readonly onHoverOver = (event: PointerEvent): void => {
     if (this.overlay.containsEvent(event)) {
-      this.clearHoverOpenTimer();
+      this.cancelPendingHover();
       this.clearHoverCloseTimer();
-      return;
-    }
-    if (
-      this.activeHoverElement &&
-      event.target instanceof Node &&
-      this.activeHoverElement.contains(event.target)
-    ) {
-      this.clearHoverCloseTimer();
-      return;
-    }
-
-    this.clearHoverTimers();
-    const target = event.target;
-    this.hoverOpenTimer = this.view.setTimeout(() => {
-      this.hoverOpenTimer = null;
-      const candidate = this.hoverExtractor(target);
-      if (!candidate) return;
-      this.activeHoverElement = candidate.element;
-      this.runCandidate(candidate);
-    }, HOVER_OPEN_DELAY);
-  };
-
-  private readonly onHoverOut = (event: PointerEvent): void => {
-    this.clearHoverOpenTimer();
-    if (
-      this.activeHoverElement &&
-      event.relatedTarget instanceof Node &&
-      this.activeHoverElement.contains(event.relatedTarget)
-    ) {
       return;
     }
     if (this.overlay.pinned) return;
 
-    this.clearHoverCloseTimer();
-    this.hoverCloseTimer = this.view.setTimeout(() => {
-      this.hoverCloseTimer = null;
-      this.close();
-    }, HOVER_CLOSE_DELAY);
+    const candidate = this.hoverExtractor(event.target);
+    if (!candidate) {
+      this.cancelPendingHover();
+      return;
+    }
+    if (this.activeHoverElement === candidate.element) {
+      this.clearHoverCloseTimer();
+      return;
+    }
+    if (this.pendingHoverCandidate?.element === candidate.element) return;
+
+    this.cancelPendingHover();
+    this.pendingHoverCandidate = candidate;
+    this.hoverOpenTimer = this.view.setTimeout(() => {
+      this.hoverOpenTimer = null;
+      const pending = this.pendingHoverCandidate;
+      this.pendingHoverCandidate = null;
+      if (!pending) return;
+      this.activeHoverElement = pending.element;
+      this.runCandidate(pending, false);
+    }, HOVER_OPEN_DELAY);
+  };
+
+  private readonly onHoverOut = (event: PointerEvent): void => {
+    if (this.overlay.containsEvent(event)) {
+      if (!this.overlay.pinned) this.scheduleHoverClose();
+      return;
+    }
+    const from = this.hoverExtractor(event.target);
+    const to = this.hoverExtractor(event.relatedTarget);
+    if (from && to && from.element === to.element) return;
+    if (from && this.pendingHoverCandidate?.element === from.element) {
+      this.cancelPendingHover();
+    }
+    if (this.overlay.pinned) return;
+    this.scheduleHoverClose();
   };
 
   private readonly onDocumentPointerDown = (event: PointerEvent): void => {
@@ -210,7 +218,10 @@ export class InteractionController {
     if (event.key === 'Escape') this.close();
   };
 
-  private runCandidate(candidate: TextCandidate): void {
+  private runCandidate(
+    candidate: TextCandidate,
+    userActivated: boolean,
+  ): void {
     const settings = this.settings;
     if (!settings?.enabled || this.overlay.pinned) return;
 
@@ -218,29 +229,54 @@ export class InteractionController {
     this.clearSameLanguageTimer();
     const requestId = ++this.requestId;
     void this.engine
-      .translate(candidate.text, settings.targetLanguage, state => {
-        if (requestId !== this.requestId) return;
-        this.overlay.render(state, candidate.anchorRect);
-        if (state.kind === 'same-language') {
-          this.clearSameLanguageTimer();
-          this.sameLanguageTimer = this.view.setTimeout(
-            () => this.close(),
-            SAME_LANGUAGE_DURATION,
-          );
-        }
-      })
+      .translate(
+        candidate.text,
+        settings.targetLanguage,
+        state => {
+          if (requestId !== this.requestId) return;
+          this.overlay.render(state, candidate.getAnchorRect);
+          if (state.kind === 'same-language') {
+            this.clearSameLanguageTimer();
+            this.sameLanguageTimer = this.view.setTimeout(
+              () => this.close(),
+              SAME_LANGUAGE_DURATION,
+            );
+          }
+        },
+        { userActivated },
+      )
       .catch(() => {
         if (requestId !== this.requestId) return;
         this.overlay.render(
           { kind: 'error', retryable: true },
-          candidate.anchorRect,
+          candidate.getAnchorRect,
         );
       });
   }
 
-  private clearHoverTimers(): void {
-    this.clearHoverOpenTimer();
+  private scheduleHoverClose(): void {
     this.clearHoverCloseTimer();
+    this.hoverCloseTimer = this.view.setTimeout(() => {
+      this.hoverCloseTimer = null;
+      this.closeForHoverTransition();
+    }, HOVER_CLOSE_DELAY);
+  }
+
+  private closeForHoverTransition(): void {
+    this.requestId += 1;
+    this.clearSameLanguageTimer();
+    this.activeHoverElement = null;
+    this.overlay.close();
+  }
+
+  private clearHoverTimers(): void {
+    this.cancelPendingHover();
+    this.clearHoverCloseTimer();
+  }
+
+  private cancelPendingHover(): void {
+    this.clearHoverOpenTimer();
+    this.pendingHoverCandidate = null;
   }
 
   private clearHoverOpenTimer(): void {

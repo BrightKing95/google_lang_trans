@@ -36,6 +36,7 @@ export interface BuiltInAiAdapter {
 
 export type TranslationState =
   | { kind: 'preparing'; progress?: number }
+  | { kind: 'activation-required'; phase: 'detector' | 'translator' }
   | { kind: 'translating'; sourceLanguage: string }
   | {
     kind: 'success';
@@ -51,3 +52,7 @@ export type TerminalTranslationState = Exclude<
   TranslationState,
   { kind: 'preparing' | 'translating' }
 >;
+
+export interface TranslationOptions {
+  userActivated?: boolean;
+}

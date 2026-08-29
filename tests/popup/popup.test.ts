@@ -143,6 +143,20 @@ describe('initializePopup', () => {
     ).not.toBeNull();
   });
 
+  it('reports unsupported when the detector API is present but unavailable', async () => {
+    vi.mocked(LanguageDetector.availability).mockResolvedValue('unavailable');
+
+    await initializePopup();
+
+    expect(screen.getByRole('status').textContent).toBe(
+      'Chrome 138 or later is required',
+    );
+    expect(
+      (screen.getByRole('radio', { name: 'Select text' }) as HTMLInputElement)
+        .disabled,
+    ).toBe(true);
+  });
+
   it('returns the settings unsubscriber', async () => {
     const unsubscribe = vi.fn();
     settingsMocks.watchSettings.mockReturnValue(unsubscribe);

@@ -29,6 +29,12 @@
   "statusUnsupported": {
     "message": "Chrome 138 or later is required"
   },
+  "activationRequired": {
+    "message": "Chrome needs your confirmation to prepare this language"
+  },
+  "prepareTranslation": {
+    "message": "Prepare and translate"
+  },
   "detecting": {
     "message": "Detecting language…"
   },

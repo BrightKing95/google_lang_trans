@@ -46,9 +46,16 @@ export async function initializePopup(): Promise<() => void> {
   };
 
   render(await loadSettings());
-  const supported =
+  let supported =
     typeof LanguageDetector !== 'undefined' &&
     typeof Translator !== 'undefined';
+  if (supported) {
+    try {
+      supported = (await LanguageDetector.availability()) !== 'unavailable';
+    } catch {
+      supported = false;
+    }
+  }
   status.dataset.state = supported ? 'ready' : 'unsupported';
   status.textContent = message(
     supported ? 'statusReady' : 'statusUnsupported',

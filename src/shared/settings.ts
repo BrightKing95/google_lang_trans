@@ -14,6 +14,7 @@ export interface ExtensionSettings {
 
 export const SETTINGS_KEY = 'settings';
 export const DEFAULT_MODE: TranslationMode = 'selection';
+let updateQueue: Promise<void> = Promise.resolve();
 
 function defaultSettings(): ExtensionSettings {
   return {
@@ -46,7 +47,7 @@ export async function loadSettings(): Promise<ExtensionSettings> {
   return sanitizeSettings(stored[SETTINGS_KEY]);
 }
 
-export async function updateSettings(
+async function applySettingsUpdate(
   patch: Partial<ExtensionSettings>,
 ): Promise<ExtensionSettings> {
   const current = await loadSettings();
@@ -61,6 +62,17 @@ export async function updateSettings(
 
   await chrome.storage.local.set({ [SETTINGS_KEY]: next });
   return next;
+}
+
+export function updateSettings(
+  patch: Partial<ExtensionSettings>,
+): Promise<ExtensionSettings> {
+  const operation = updateQueue.then(() => applySettingsUpdate(patch));
+  updateQueue = operation.then(
+    () => undefined,
+    () => undefined,
+  );
+  return operation;
 }
 
 export function watchSettings(

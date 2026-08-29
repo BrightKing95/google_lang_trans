@@ -1,5 +1,14 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { beforeAll, expect, it } from 'vitest';
 
@@ -33,4 +42,26 @@ it('builds an installable extension without remote code or a worker', () => {
   expect(scripts).not.toMatch(/https?:\/\//);
   expect(scripts).not.toMatch(/\beval\s*\(/);
   expect(scripts).not.toMatch(/\bnew\s+Function\b/);
+});
+
+it('rejects a remote asset inserted into built HTML', () => {
+  const temporary = mkdtempSync(join(tmpdir(), 'quick-translate-dist-'));
+  const fixture = join(temporary, 'dist');
+  cpSync('dist', fixture, { recursive: true });
+  writeFileSync(
+    join(fixture, 'popup.html'),
+    '<!doctype html><script src="https://example.com/remote.js"></script>',
+  );
+
+  try {
+    expect(() =>
+      execFileSync(
+        process.execPath,
+        ['scripts/validate-dist.mjs', fixture],
+        { stdio: 'pipe' },
+      ),
+    ).toThrow(/forbidden remote URL/);
+  } finally {
+    rmSync(temporary, { recursive: true, force: true });
+  }
 });

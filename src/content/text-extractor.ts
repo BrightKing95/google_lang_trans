@@ -11,6 +11,7 @@ export interface TextCandidate {
   text: string;
   anchorRect: DOMRect;
   element: Element;
+  getAnchorRect(): DOMRect | null;
 }
 
 export function normalizeAndLimitText(
@@ -65,6 +66,49 @@ function hasDirectText(element: Element): boolean {
   );
 }
 
+function visibleTextNodes(element: Element): Text[] {
+  const nodes: Text[] = [];
+  const walker = element.ownerDocument.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        if (
+          !parent ||
+          isExcluded(parent) ||
+          !isVisible(parent) ||
+          !node.textContent
+        ) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    },
+  );
+  let current = walker.nextNode();
+  while (current) {
+    nodes.push(current as Text);
+    current = walker.nextNode();
+  }
+  return nodes;
+}
+
+function visibleTextContent(element: Element): string {
+  return visibleTextNodes(element).map(node => node.data).join('');
+}
+
+function visibleRangeText(range: Range, element: Element): string {
+  return visibleTextNodes(element)
+    .filter(node => range.intersectsNode(node))
+    .map(node => {
+      const start = range.startContainer === node ? range.startOffset : 0;
+      const end = range.endContainer === node ? range.endOffset : node.length;
+      return node.data.slice(start, end);
+    })
+    .join('');
+}
+
 function nearestTextContainer(origin: Element): Element | null {
   const semanticBlock = origin.closest(SEMANTIC_BLOCKS);
   if (semanticBlock) return semanticBlock;
@@ -86,13 +130,15 @@ export function extractHoverCandidate(
   const element = nearestTextContainer(origin);
   if (!element || !isVisible(element)) return null;
 
-  const text = normalizeAndLimitText(element.textContent ?? '');
+  const text = normalizeAndLimitText(visibleTextContent(element));
   if (!text) return null;
 
   return {
     text,
     anchorRect: element.getBoundingClientRect(),
     element,
+    getAnchorRect: () =>
+      element.isConnected ? element.getBoundingClientRect() : null,
   };
 }
 
@@ -107,12 +153,16 @@ export function extractSelectionCandidate(
   const element = elementFromTarget(range.commonAncestorContainer);
   if (!element || isExcluded(element) || !isVisible(element)) return null;
 
-  const text = selection.toString().replace(/\s+/gu, ' ').trim();
+  const text = visibleRangeText(range, element).replace(/\s+/gu, ' ').trim();
   if (!text) return null;
 
   return {
     text,
     anchorRect: range.getBoundingClientRect(),
     element,
+    getAnchorRect: () =>
+      range.commonAncestorContainer.isConnected
+        ? range.getBoundingClientRect()
+        : null,
   };
 }

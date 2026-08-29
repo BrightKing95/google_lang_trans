@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 function fail(message) {
   throw new Error(message);
@@ -12,7 +13,9 @@ function readJson(file) {
   }
 }
 
-const manifestFile = 'dist/manifest.json';
+const root = process.argv[2] ?? 'dist';
+const artifact = relative => join(root, relative);
+const manifestFile = artifact('manifest.json');
 if (!existsSync(manifestFile)) fail(`missing required file: ${manifestFile}`);
 const manifest = readJson(manifestFile);
 
@@ -40,25 +43,27 @@ if (contentScript.all_frames !== false) {
 }
 
 const required = [
-  'dist/content.js',
-  'dist/popup.html',
-  'dist/popup.js',
-  'dist/popup.css',
-  'dist/_locales/en/messages.json',
-  'dist/_locales/zh_CN/messages.json',
+  'content.js',
+  'popup.html',
+  'popup.js',
+  'popup.css',
+  '_locales/en/messages.json',
+  '_locales/zh_CN/messages.json',
 ];
-for (const file of required) {
+for (const relative of required) {
+  const file = artifact(relative);
   if (!existsSync(file)) fail(`missing required file: ${file}`);
 }
-readJson('dist/_locales/en/messages.json');
-readJson('dist/_locales/zh_CN/messages.json');
+readJson(artifact('_locales/en/messages.json'));
+readJson(artifact('_locales/zh_CN/messages.json'));
 
 const forbidden = [
   { label: 'remote URL', pattern: /https?:\/\// },
   { label: 'eval', pattern: /\beval\s*\(/ },
   { label: 'Function constructor', pattern: /\bnew\s+Function\b/ },
 ];
-for (const file of ['dist/content.js', 'dist/popup.js']) {
+for (const relative of ['content.js', 'popup.js', 'popup.html', 'popup.css']) {
+  const file = artifact(relative);
   const source = readFileSync(file, 'utf8');
   for (const rule of forbidden) {
     if (rule.pattern.test(source)) {

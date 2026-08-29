@@ -40,6 +40,7 @@ describe('i18n helpers', () => {
 
     expect(document.querySelector('span')?.textContent).toBe('已启用');
     expect(document.documentElement.lang).toBe('zh-CN');
+    expect(document.title).toBe('extensionName');
   });
 
   it('keeps English and Chinese catalogs in exact key parity', () => {

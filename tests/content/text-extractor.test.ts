@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   extractHoverCandidate,
@@ -70,6 +70,32 @@ describe('extractHoverCandidate', () => {
     expect(extractHoverCandidate(document.querySelector('#hidden'))).toBeNull();
     expect(extractHoverCandidate(document.querySelector('#empty'))).toBeNull();
   });
+
+  it('includes only visible text and excludes hidden or executable descendants', () => {
+    document.body.innerHTML = [
+      '<p id="paragraph">Visible',
+      '<span style="display:none">secret</span>',
+      '<script>hiddenScript()</script>',
+      '<span>copy</span></p>',
+    ].join(' ');
+
+    expect(extractHoverCandidate(document.querySelector('#paragraph'))?.text).toBe(
+      'Visible copy',
+    );
+  });
+
+  it('provides a live anchor rectangle and invalidates it after removal', () => {
+    document.body.innerHTML = '<p id="paragraph">Visible copy</p>';
+    const paragraph = document.querySelector<HTMLElement>('#paragraph')!;
+    const currentRect = new DOMRect(30, 40, 120, 24);
+    vi.spyOn(paragraph, 'getBoundingClientRect').mockReturnValue(currentRect);
+
+    const candidate = extractHoverCandidate(paragraph)!;
+    expect(candidate.getAnchorRect()).toBe(currentRect);
+
+    paragraph.remove();
+    expect(candidate.getAnchorRect()).toBeNull();
+  });
 });
 
 describe('extractSelectionCandidate', () => {
@@ -106,5 +132,19 @@ describe('extractSelectionCandidate', () => {
     selection.addRange(range);
 
     expect(extractSelectionCandidate(selection)).toBeNull();
+  });
+
+  it('excludes hidden descendants from a range selection', () => {
+    document.body.innerHTML =
+      '<p id="paragraph">Visible <span style="display:none">secret</span><span>copy</span></p>';
+    const paragraph = document.querySelector('#paragraph')!;
+    const range = document.createRange();
+    range.selectNodeContents(paragraph);
+    Object.assign(range, { getBoundingClientRect: () => new DOMRect() });
+    const selection = document.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    expect(extractSelectionCandidate(selection)?.text).toBe('Visible copy');
   });
 });

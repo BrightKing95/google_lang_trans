@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   copyText,
+  installContentApp,
   speakText,
   startContentApp,
   type ContentAppDependencies,
@@ -86,6 +87,20 @@ describe('content app composition', () => {
     expect(harness.unsubscribe).toHaveBeenCalledOnce();
     expect(harness.controller.stop).toHaveBeenCalledOnce();
   });
+
+  it('cleans up models and listeners on a non-BFCache pagehide', async () => {
+    const harness = createContentAppHarness();
+    const cleanup = await installContentApp(harness.dependencies, window);
+    const pagehide = new Event('pagehide');
+    Object.defineProperty(pagehide, 'persisted', { value: false });
+
+    window.dispatchEvent(pagehide);
+
+    expect(harness.unsubscribe).toHaveBeenCalledOnce();
+    expect(harness.controller.stop).toHaveBeenCalledOnce();
+    cleanup();
+    expect(harness.controller.stop).toHaveBeenCalledOnce();
+  });
 });
 
 describe('translation actions', () => {
@@ -108,7 +123,15 @@ describe('translation actions', () => {
       value: { writeText },
       configurable: true,
     });
-    const exec = vi.fn(() => true);
+    const exec = vi.fn(() => {
+      const host = document.querySelector<HTMLElement>(
+        '[data-quick-translate-copy-host]',
+      );
+      expect(host).not.toBeNull();
+      expect(host?.shadowRoot).toBeNull();
+      expect(document.querySelector('textarea')).toBeNull();
+      return true;
+    });
     Object.defineProperty(document, 'execCommand', {
       value: exec,
       configurable: true,
@@ -118,6 +141,9 @@ describe('translation actions', () => {
 
     expect(writeText).toHaveBeenCalledWith('你好');
     expect(exec).toHaveBeenCalledWith('copy');
+    expect(
+      document.querySelector('[data-quick-translate-copy-host]'),
+    ).toBeNull();
     expect(document.querySelector('textarea[data-quick-translate-copy]')).toBeNull();
   });
 

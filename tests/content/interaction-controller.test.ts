@@ -5,6 +5,7 @@ import type { SupportedLanguage } from '../../src/shared/languages';
 import type { ExtensionSettings } from '../../src/shared/settings';
 import type {
   TerminalTranslationState,
+  TranslationOptions,
   TranslationState,
 } from '../../src/translation/types';
 
@@ -27,9 +28,12 @@ function createControllerHarness(overrides: Partial<ExtensionSettings> = {}) {
     text: 'Hello world',
     anchorRect: new DOMRect(10, 10, 80, 20),
     element: target,
+    getAnchorRect: vi.fn(() => new DOMRect(10, 10, 80, 20)),
   };
-  const selectionExtractor = vi.fn(() => candidate);
-  const hoverExtractor = vi.fn(() => candidate);
+  const selectionExtractor = vi.fn((_selection?: Selection | null) => candidate);
+  const hoverExtractor = vi.fn((_target?: EventTarget | null) =>
+    _target ? candidate : null,
+  );
   const success = {
     kind: 'success',
     sourceLanguage: 'en',
@@ -42,6 +46,7 @@ function createControllerHarness(overrides: Partial<ExtensionSettings> = {}) {
         _text: string,
         _target: SupportedLanguage,
         onState: (state: TranslationState) => void,
+        _options?: TranslationOptions,
       ): Promise<TerminalTranslationState> => {
         onState(success);
         return success;
@@ -101,6 +106,7 @@ describe('InteractionController', () => {
       'Hello world',
       'zh',
       expect.any(Function),
+      { userActivated: true },
     );
   });
 
@@ -115,6 +121,12 @@ describe('InteractionController', () => {
     expect(harness.engine.translate).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     expect(harness.engine.translate).toHaveBeenCalledTimes(1);
+    expect(harness.engine.translate).toHaveBeenCalledWith(
+      'Hello world',
+      'zh',
+      expect.any(Function),
+      { userActivated: false },
+    );
 
     harness.target.dispatchEvent(
       new PointerEvent('pointerout', { bubbles: true }),
@@ -138,6 +150,60 @@ describe('InteractionController', () => {
     );
     await vi.advanceTimersByTimeAsync(500);
     expect(harness.hoverExtractor).toHaveBeenCalledOnce();
+  });
+
+  it('keeps one 500ms dwell while moving across descendants of the same block', async () => {
+    const harness = createControllerHarness({ mode: 'hover' });
+    harness.target.innerHTML = '<span id="first">Hello</span> <span id="second">world</span>';
+    harness.controller.start(harness.settings);
+
+    document.querySelector('#first')!.dispatchEvent(
+      new PointerEvent('pointerover', { bubbles: true }),
+    );
+    await vi.advanceTimersByTimeAsync(250);
+    document.querySelector('#second')!.dispatchEvent(
+      new PointerEvent('pointerover', { bubbles: true }),
+    );
+    await vi.advanceTimersByTimeAsync(250);
+
+    expect(harness.engine.translate).toHaveBeenCalledOnce();
+  });
+
+  it('closes the old candidate after 250ms without cancelling the new dwell', async () => {
+    const harness = createControllerHarness({ mode: 'hover' });
+    const second = document.createElement('p');
+    second.textContent = 'Second block';
+    document.body.append(second);
+    const firstCandidate = harness.selectionExtractor();
+    const secondCandidate = {
+      text: 'Second block',
+      anchorRect: new DOMRect(20, 30, 90, 20),
+      element: second,
+      getAnchorRect: vi.fn(() => new DOMRect(20, 30, 90, 20)),
+    };
+    harness.hoverExtractor.mockImplementation(target =>
+      target === second ? secondCandidate : firstCandidate,
+    );
+    harness.controller.start(harness.settings);
+
+    harness.target.dispatchEvent(
+      new PointerEvent('pointerover', { bubbles: true }),
+    );
+    await vi.advanceTimersByTimeAsync(500);
+    harness.target.dispatchEvent(
+      new PointerEvent('pointerout', { bubbles: true, relatedTarget: second }),
+    );
+    second.dispatchEvent(
+      new PointerEvent('pointerover', {
+        bubbles: true,
+        relatedTarget: harness.target,
+      }),
+    );
+
+    await vi.advanceTimersByTimeAsync(250);
+    expect(harness.overlay.close).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(250);
+    expect(harness.engine.translate).toHaveBeenCalledTimes(2);
   });
 
   it('registers no automatic interaction when disabled', () => {
@@ -188,7 +254,7 @@ describe('InteractionController', () => {
     expect(harness.overlay.render).toHaveBeenCalledTimes(1);
     expect(harness.overlay.render).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'success', translatedText: 'new' }),
-      expect.any(DOMRect),
+      expect.any(Function),
     );
   });
 
@@ -252,6 +318,41 @@ describe('InteractionController', () => {
     });
 
     expect(harness.overlay.render).not.toHaveBeenCalled();
+  });
+
+  it('retries activation-required model preparation as a user activation', async () => {
+    const harness = createControllerHarness({ mode: 'hover' });
+    harness.engine.translate.mockImplementation(
+      async (_text, _target, onState, options) => {
+        const state = options?.userActivated
+          ? ({
+            kind: 'success',
+            sourceLanguage: 'en',
+            targetLanguage: 'zh',
+            translatedText: '你好',
+          } as const)
+          : ({
+            kind: 'activation-required',
+            phase: 'detector',
+          } as const);
+        onState(state);
+        return state;
+      },
+    );
+    harness.controller.start(harness.settings);
+    harness.target.dispatchEvent(
+      new PointerEvent('pointerover', { bubbles: true }),
+    );
+    await vi.advanceTimersByTimeAsync(500);
+
+    harness.controller.retry();
+
+    expect(harness.engine.translate).toHaveBeenLastCalledWith(
+      'Hello world',
+      'zh',
+      expect.any(Function),
+      { userActivated: true },
+    );
   });
 
   it('closes a same-language notice at exactly 1200ms and fully stops', async () => {

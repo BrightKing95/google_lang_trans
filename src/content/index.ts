@@ -34,6 +34,25 @@ export async function startContentApp(
   };
 }
 
+export async function installContentApp(
+  dependencies: ContentAppDependencies,
+  view: Window = window,
+): Promise<() => void> {
+  const stop = await startContentApp(dependencies);
+  let cleaned = false;
+  const cleanup = (): void => {
+    if (cleaned) return;
+    cleaned = true;
+    view.removeEventListener('pagehide', onPageHide);
+    stop();
+  };
+  const onPageHide = (event: PageTransitionEvent): void => {
+    if (!event.persisted) cleanup();
+  };
+  view.addEventListener('pagehide', onPageHide);
+  return cleanup;
+}
+
 export async function copyText(
   text: string,
   doc: Document = document,
@@ -49,15 +68,20 @@ export async function copyText(
     }
   }
 
+  const host = doc.createElement('div');
+  host.dataset.quickTranslateCopyHost = '';
+  host.style.position = 'fixed';
+  host.style.left = '-10000px';
+  host.style.top = '0';
+  host.style.pointerEvents = 'none';
+  const root = host.attachShadow({ mode: 'closed' });
   const textarea = doc.createElement('textarea');
   textarea.dataset.quickTranslateCopy = '';
   textarea.value = text;
   textarea.readOnly = true;
   textarea.setAttribute('aria-hidden', 'true');
-  textarea.style.position = 'fixed';
-  textarea.style.left = '-10000px';
-  textarea.style.top = '0';
-  (doc.body ?? doc.documentElement).append(textarea);
+  root.append(textarea);
+  (doc.body ?? doc.documentElement).append(host);
   try {
     textarea.focus({ preventScroll: true });
     textarea.select();
@@ -66,7 +90,7 @@ export async function copyText(
     };
     commandDocument.execCommand?.('copy');
   } finally {
-    textarea.remove();
+    host.remove();
   }
 }
 
@@ -108,7 +132,7 @@ if (
   typeof LanguageDetector !== 'undefined' &&
   typeof Translator !== 'undefined'
 ) {
-  void startContentApp({
+  void installContentApp({
     loadSettings,
     watchSettings,
     createController: createProductionController,

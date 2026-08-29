@@ -11,6 +11,8 @@ export const MESSAGE_KEYS = [
   'statusReady',
   'statusPreparing',
   'statusUnsupported',
+  'activationRequired',
+  'prepareTranslation',
   'detecting',
   'translating',
   'sameLanguage',
@@ -44,6 +46,7 @@ export function displayLanguageName(
 export function localizeDocument(root: ParentNode = document): void {
   if (root instanceof Document) {
     root.documentElement.lang = chrome.i18n.getUILanguage();
+    root.title = message('extensionName');
   }
   for (const element of root.querySelectorAll<HTMLElement>('[data-i18n]')) {
     const key = element.dataset.i18n as MessageKey;

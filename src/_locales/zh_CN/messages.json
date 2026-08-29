@@ -29,6 +29,12 @@
   "statusUnsupported": {
     "message": "需要 Chrome 138 或更高版本"
   },
+  "activationRequired": {
+    "message": "Chrome 需要你的确认以准备该语言能力"
+  },
+  "prepareTranslation": {
+    "message": "准备并翻译"
+  },
   "detecting": {
     "message": "正在检测语言…"
   },

@@ -23,6 +23,7 @@ npm run build
 - **Mouse capture:** leave the pointer over a text block for 500ms. Moving away closes an unpinned result after 250ms.
 - Use the Popup to enable/disable the extension, switch the mutually exclusive mode, and choose a persistent target language.
 - The first use of a language may download a Chrome-managed language pack and display preparation progress.
+- If Chrome requires a user action before a language pack download, choose **Prepare and translate** in the nearby result. Detector and translator packs can require separate confirmations on first use.
 
 ## Permissions and privacy
 

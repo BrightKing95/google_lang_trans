@@ -75,6 +75,13 @@ describe('OverlayRenderer', () => {
     overlay.render({ kind: 'translating', sourceLanguage: 'en' }, anchor);
     expect(capturedRoot.textContent).toContain('translating');
 
+    overlay.render(
+      { kind: 'activation-required', phase: 'detector' },
+      anchor,
+    );
+    expect(capturedRoot.textContent).toContain('activationRequired');
+    expect(capturedRoot.textContent).toContain('prepareTranslation');
+
     overlay.render({ kind: 'same-language', language: 'en' }, anchor);
     expect(capturedRoot.textContent).toContain('sameLanguage');
 
@@ -142,6 +149,21 @@ describe('OverlayRenderer', () => {
     expect(actions.onClose).toHaveBeenCalledOnce();
   });
 
+  it('continues model preparation only from an explicit action button', () => {
+    const actions = createActions();
+    const overlay = new OverlayRenderer(document, actions, message);
+    overlay.render(
+      { kind: 'activation-required', phase: 'translator' },
+      rect(10, 10),
+    );
+
+    capturedRoot
+      .querySelector<HTMLButtonElement>('[data-action="activate"]')!
+      .click();
+
+    expect(actions.onRetry).toHaveBeenCalledOnce();
+  });
+
   it('keeps the card inside the viewport and flips above near the bottom', () => {
     vi.stubGlobal('innerWidth', 320);
     vi.stubGlobal('innerHeight', 240);
@@ -158,6 +180,42 @@ describe('OverlayRenderer', () => {
     const card = capturedRoot.querySelector<HTMLElement>('[role="status"]')!;
     expect(card.style.left).toBe('22px');
     expect(card.style.top).toBe('82px');
+  });
+
+  it('re-reads a live anchor when the viewport changes', () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      rect(0, 0, 120, 60),
+    );
+    let anchor = rect(10, 20, 80, 20);
+    const overlay = new OverlayRenderer(document, createActions(), message);
+    overlay.render(
+      { kind: 'translating', sourceLanguage: 'en' },
+      () => anchor,
+    );
+    const card = capturedRoot.querySelector<HTMLElement>('[role="status"]')!;
+    expect(card.style.left).toBe('10px');
+    expect(card.style.top).toBe('48px');
+
+    anchor = rect(100, 120, 80, 20);
+    window.dispatchEvent(new Event('scroll'));
+    expect(card.style.left).toBe('100px');
+    expect(card.style.top).toBe('148px');
+  });
+
+  it('requests closure when a live anchor is no longer available', () => {
+    const actions = createActions();
+    let connected = true;
+    const overlay = new OverlayRenderer(document, actions, message);
+    overlay.render(
+      { kind: 'translating', sourceLanguage: 'en' },
+      () => (connected ? rect(10, 20) : null),
+    );
+
+    connected = false;
+    window.dispatchEvent(new Event('resize'));
+
+    expect(actions.onClose).toHaveBeenCalledOnce();
+    expect(document.querySelector('[data-quick-translate-host]')).toBeNull();
   });
 
   it('detects owned events and removes viewport listeners and host on close', () => {

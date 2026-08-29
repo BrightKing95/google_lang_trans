@@ -48,4 +48,18 @@ describe('settings', () => {
       targetLanguage: 'ja',
     });
   });
+
+  it('serializes concurrent partial updates without losing fields', async () => {
+    await Promise.all([
+      updateSettings({ enabled: false }),
+      updateSettings({ mode: 'hover' }),
+      updateSettings({ targetLanguage: 'ja' }),
+    ]);
+
+    await expect(loadSettings()).resolves.toEqual({
+      enabled: false,
+      mode: 'hover',
+      targetLanguage: 'ja',
+    });
+  });
 });
