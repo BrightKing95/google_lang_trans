@@ -4,5 +4,65 @@
   },
   "extensionDescription": {
     "message": "Translate selected or hovered text locally in Chrome."
+  },
+  "enabled": {
+    "message": "Enabled"
+  },
+  "modeLabel": {
+    "message": "Translation mode"
+  },
+  "modeSelection": {
+    "message": "Select text"
+  },
+  "modeHover": {
+    "message": "Mouse capture"
+  },
+  "targetLanguage": {
+    "message": "Target language"
+  },
+  "statusReady": {
+    "message": "Ready"
+  },
+  "statusPreparing": {
+    "message": "Preparing translation…"
+  },
+  "statusUnsupported": {
+    "message": "Chrome 138 or later is required"
+  },
+  "detecting": {
+    "message": "Detecting language…"
+  },
+  "translating": {
+    "message": "Translating…"
+  },
+  "sameLanguage": {
+    "message": "Content is already in the target language"
+  },
+  "unsupportedPair": {
+    "message": "This language pair is not supported"
+  },
+  "translationFailed": {
+    "message": "Translation could not be completed"
+  },
+  "retry": {
+    "message": "Retry"
+  },
+  "copy": {
+    "message": "Copy"
+  },
+  "copied": {
+    "message": "Copied"
+  },
+  "speak": {
+    "message": "Listen"
+  },
+  "pin": {
+    "message": "Pin"
+  },
+  "unpin": {
+    "message": "Unpin"
+  },
+  "close": {
+    "message": "Close"
   }
 }

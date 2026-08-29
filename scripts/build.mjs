@@ -6,7 +6,7 @@ await mkdir('dist', { recursive: true });
 await build({
   entryPoints: {
     content: 'src/content/index.ts',
-    popup: 'src/popup/popup.ts',
+    popup: 'src/popup/popup-entry.ts',
   },
   bundle: true,
   outdir: 'dist',

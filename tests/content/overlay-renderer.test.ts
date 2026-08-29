@@ -67,7 +67,7 @@ describe('OverlayRenderer', () => {
     const anchor = rect(10, 10);
 
     overlay.render({ kind: 'preparing', progress: 0.42 }, anchor);
-    expect(capturedRoot.textContent).toContain('preparingModel');
+    expect(capturedRoot.textContent).toContain('statusPreparing');
     expect(
       capturedRoot.querySelector<HTMLProgressElement>('progress')?.value,
     ).toBe(42);

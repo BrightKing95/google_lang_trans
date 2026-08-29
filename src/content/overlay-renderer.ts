@@ -124,7 +124,7 @@ export class OverlayRenderer {
   ): void {
     const text = this.doc.createElement('p');
     text.className = 'text notice';
-    text.textContent = this.message('preparingModel');
+    text.textContent = this.message('statusPreparing');
     const progress = this.doc.createElement('progress');
     progress.max = 100;
     if (progressValue !== undefined) {
