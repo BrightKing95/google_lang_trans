@@ -1,0 +1,8 @@
+{
+  "extensionName": {
+    "message": "Quick Translate"
+  },
+  "extensionDescription": {
+    "message": "Translate selected or hovered text locally in Chrome."
+  }
+}

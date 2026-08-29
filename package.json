@@ -1,0 +1,21 @@
+{
+  "name": "quick-translate-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.2.7",
+    "@types/dom-chromium-ai": "^0.0.17",
+    "@types/node": "^26.4.0",
+    "esbuild": "^0.28.2",
+    "jsdom": "^29.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  }
+}
