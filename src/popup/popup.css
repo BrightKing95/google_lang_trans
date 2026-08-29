@@ -45,6 +45,8 @@ h1 {
 #status[data-state="ready"]::before { background: #188038; }
 #status[data-state="unsupported"] { color: #b3261e; }
 #status[data-state="unsupported"]::before { background: #b3261e; }
+#status[data-state="error"] { color: #b3261e; }
+#status[data-state="error"]::before { background: #b3261e; }
 
 .switch-row {
   display: flex;

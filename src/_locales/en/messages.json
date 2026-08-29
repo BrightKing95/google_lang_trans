@@ -29,6 +29,15 @@
   "statusUnsupported": {
     "message": "Chrome 138 or later is required"
   },
+  "statusApiUnavailable": {
+    "message": "Built-in translation is unavailable"
+  },
+  "settingsSaveFailed": {
+    "message": "Settings could not be saved"
+  },
+  "settingsLoadFailed": {
+    "message": "Settings could not be loaded"
+  },
   "activationRequired": {
     "message": "Chrome needs your confirmation to prepare this language"
   },

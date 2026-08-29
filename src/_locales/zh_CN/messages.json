@@ -29,6 +29,15 @@
   "statusUnsupported": {
     "message": "需要 Chrome 138 或更高版本"
   },
+  "statusApiUnavailable": {
+    "message": "当前无法使用内置翻译功能"
+  },
+  "settingsSaveFailed": {
+    "message": "设置保存失败"
+  },
+  "settingsLoadFailed": {
+    "message": "设置加载失败"
+  },
   "activationRequired": {
     "message": "Chrome 需要你的确认以准备该语言能力"
   },

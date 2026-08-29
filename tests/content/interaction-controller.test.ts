@@ -77,6 +77,7 @@ function createControllerHarness(overrides: Partial<ExtensionSettings> = {}) {
   controllers.push(controller);
   return {
     controller,
+    candidate,
     target,
     engine,
     overlay,
@@ -254,7 +255,7 @@ describe('InteractionController', () => {
     expect(harness.overlay.render).toHaveBeenCalledTimes(1);
     expect(harness.overlay.render).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'success', translatedText: 'new' }),
-      expect.any(Function),
+      harness.candidate,
     );
   });
 

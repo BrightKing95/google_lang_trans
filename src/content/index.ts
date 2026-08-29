@@ -1,5 +1,9 @@
 import { message, type MessageKey } from '../shared/i18n';
-import { loadSettings, watchSettings } from '../shared/settings';
+import {
+  loadSettings,
+  watchSettings,
+  type ExtensionSettings,
+} from '../shared/settings';
 import { chromeAiAdapter } from '../translation/chrome-ai-adapter';
 import { TranslationEngine } from '../translation/translation-engine';
 import { InteractionController } from './interaction-controller';
@@ -19,7 +23,13 @@ export async function startContentApp(
   dependencies: ContentAppDependencies,
 ): Promise<() => void> {
   const controller = dependencies.createController();
-  const settings = await dependencies.loadSettings();
+  let settings: ExtensionSettings;
+  try {
+    settings = await dependencies.loadSettings();
+  } catch (error) {
+    controller.stop();
+    throw error;
+  }
   controller.start(settings);
   const unsubscribe = dependencies.watchSettings(next => {
     controller.applySettings(next);
@@ -136,5 +146,5 @@ if (
     loadSettings,
     watchSettings,
     createController: createProductionController,
-  });
+  }).catch(() => undefined);
 }

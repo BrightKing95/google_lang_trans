@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { screen } from '@testing-library/dom';
+import { screen, waitFor } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -60,6 +60,9 @@ beforeEach(() => {
     statusPreparing: 'Preparing translation…',
     statusReady: 'Ready',
     statusUnsupported: 'Chrome 138 or later is required',
+    statusApiUnavailable: 'Built-in translation is unavailable',
+    settingsSaveFailed: 'Settings could not be saved',
+    settingsLoadFailed: 'Settings could not be loaded',
   };
   chrome.i18n.getMessage = vi.fn((key: string) => messages[key] ?? key);
   chrome.i18n.getUILanguage = vi.fn(() => 'en');
@@ -149,11 +152,48 @@ describe('initializePopup', () => {
     await initializePopup();
 
     expect(screen.getByRole('status').textContent).toBe(
-      'Chrome 138 or later is required',
+      'Built-in translation is unavailable',
     );
     expect(
       (screen.getByRole('radio', { name: 'Select text' }) as HTMLInputElement)
         .disabled,
+    ).toBe(true);
+  });
+
+  it('reverts controls and reports a settings write failure', async () => {
+    const user = userEvent.setup();
+    settingsMocks.updateSettings.mockRejectedValueOnce(new Error('storage'));
+    await initializePopup();
+    const checkbox = screen.getByRole('checkbox', {
+      name: 'Enabled',
+    }) as HTMLInputElement;
+
+    await user.click(checkbox);
+
+    await waitFor(() => {
+      expect(checkbox.checked).toBe(true);
+      expect(screen.getByRole('status').textContent).toBe(
+        'Settings could not be saved',
+      );
+    });
+  });
+
+  it('shows an inert error state when settings cannot be loaded', async () => {
+    settingsMocks.loadSettings.mockRejectedValueOnce(new Error('storage'));
+
+    await expect(initializePopup()).resolves.toEqual(expect.any(Function));
+
+    expect(screen.getByRole('status').textContent).toBe(
+      'Settings could not be loaded',
+    );
+    expect(
+      (screen.getByRole('checkbox', { name: 'Enabled' }) as HTMLInputElement)
+        .disabled,
+    ).toBe(true);
+    expect(
+      (screen.getByRole('combobox', {
+        name: 'Target language',
+      }) as HTMLSelectElement).disabled,
     ).toBe(true);
   });
 

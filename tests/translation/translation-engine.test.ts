@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TranslationEngine } from '../../src/translation/translation-engine';
 import type {
   BuiltInAiAdapter,
+  LanguagePair,
   ModelAvailability,
   TranslationState,
 } from '../../src/translation/types';
@@ -24,7 +25,12 @@ function createFakeAiAdapter(
     detectorAvailability: vi.fn(async (): Promise<ModelAvailability> => 'available'),
     createDetector: vi.fn(async (_onProgress: (loaded: number) => void) => detector),
     translatorAvailability: vi.fn(async (): Promise<ModelAvailability> => 'available'),
-    createTranslator: vi.fn(async () => translator),
+    createTranslator: vi.fn(
+      async (
+        _pair: LanguagePair,
+        _onProgress: (loaded: number) => void,
+      ) => translator,
+    ),
   } satisfies BuiltInAiAdapter;
   return { adapter, detector, translator };
 }
@@ -293,6 +299,39 @@ describe('TranslationEngine', () => {
     await expect(Promise.all([first, second])).resolves.toHaveLength(2);
   });
 
+  it('broadcasts detector download progress to every waiting translation', async () => {
+    const harness = createFakeAiAdapter();
+    let reportProgress!: (loaded: number) => void;
+    let resolveDetector!: (detector: typeof harness.detector) => void;
+    harness.adapter.createDetector.mockImplementation(
+      onProgress => new Promise(resolve => {
+        reportProgress = onProgress;
+        resolveDetector = resolve;
+      }),
+    );
+    const engine = new TranslationEngine(harness.adapter);
+    const firstStates: TranslationState[] = [];
+    const secondStates: TranslationState[] = [];
+
+    const first = engine.translate(
+      'first',
+      'zh',
+      state => firstStates.push(state),
+      { userActivated: true },
+    );
+    const second = engine.translate(
+      'second',
+      'zh',
+      state => secondStates.push(state),
+    );
+    reportProgress(0.6);
+
+    expect(firstStates).toContainEqual({ kind: 'preparing', progress: 0.6 });
+    expect(secondStates).toContainEqual({ kind: 'preparing', progress: 0.6 });
+    resolveDetector(harness.detector);
+    await expect(Promise.all([first, second])).resolves.toHaveLength(2);
+  });
+
   it('shares translator creation across concurrent translations for one pair', async () => {
     const harness = createFakeAiAdapter();
     let resolveTranslator!: (translator: typeof harness.translator) => void;
@@ -312,6 +351,42 @@ describe('TranslationEngine', () => {
 
     await expect(Promise.all([first, second])).resolves.toHaveLength(2);
     expect(harness.adapter.createTranslator).toHaveBeenCalledOnce();
+  });
+
+  it('broadcasts translator download progress to every waiting translation', async () => {
+    const harness = createFakeAiAdapter();
+    harness.adapter.translatorAvailability.mockResolvedValue('downloadable');
+    const engine = new TranslationEngine(harness.adapter);
+    await engine.translate('hello', 'zh', () => undefined);
+
+    let reportProgress!: (loaded: number) => void;
+    let resolveTranslator!: (translator: typeof harness.translator) => void;
+    harness.adapter.createTranslator.mockImplementation(
+      (_pair: LanguagePair, onProgress: (loaded: number) => void) =>
+        new Promise<typeof harness.translator>(resolve => {
+        reportProgress = onProgress;
+        resolveTranslator = resolve;
+        }),
+    );
+    const firstStates: TranslationState[] = [];
+    const secondStates: TranslationState[] = [];
+    const first = engine.translate(
+      'hello',
+      'zh',
+      state => firstStates.push(state),
+      { userActivated: true },
+    );
+    const second = engine.translate(
+      'hello',
+      'zh',
+      state => secondStates.push(state),
+    );
+    reportProgress(0.4);
+
+    expect(firstStates).toContainEqual({ kind: 'preparing', progress: 0.4 });
+    expect(secondStates).toContainEqual({ kind: 'preparing', progress: 0.4 });
+    resolveTranslator(harness.translator);
+    await expect(Promise.all([first, second])).resolves.toHaveLength(2);
   });
 
   it('shares an in-flight identical translation result', async () => {

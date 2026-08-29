@@ -10,7 +10,26 @@ export interface OverlayActions {
 }
 
 type MessageLookup = (key: string) => string;
-type OverlayAnchor = DOMRect | (() => DOMRect | null);
+
+export interface LiveOverlayAnchor {
+  element: Element;
+  getAnchorRect(): DOMRect | null;
+}
+
+export type OverlayAnchor =
+  | DOMRect
+  | (() => DOMRect | null)
+  | LiveOverlayAnchor;
+
+function isLiveOverlayAnchor(
+  anchor: OverlayAnchor,
+): anchor is LiveOverlayAnchor {
+  return (
+    typeof anchor === 'object' &&
+    'element' in anchor &&
+    'getAnchorRect' in anchor
+  );
+}
 
 export class OverlayRenderer {
   private host: HTMLElement | null = null;
@@ -18,6 +37,8 @@ export class OverlayRenderer {
   private card: HTMLElement | null = null;
   private anchor: OverlayAnchor | null = null;
   private listening = false;
+  private mutationObserver: MutationObserver | null = null;
+  private resizeObserver: ResizeObserver | null = null;
   private isPinned = false;
 
   constructor(
@@ -32,10 +53,14 @@ export class OverlayRenderer {
 
   render(state: TranslationState, anchor: OverlayAnchor): void {
     this.ensureMounted();
+    this.stopAnchorObservers();
     this.anchor = anchor;
     this.card!.replaceChildren(this.renderState(state));
     this.positionCard();
-    if (this.host) this.startViewportListeners();
+    if (this.host) {
+      this.startViewportListeners();
+      this.startAnchorObservers();
+    }
   }
 
   setPinned(pinned: boolean): void {
@@ -59,6 +84,7 @@ export class OverlayRenderer {
 
   close(): void {
     this.stopViewportListeners();
+    this.stopAnchorObservers();
     this.host?.remove();
     this.host = null;
     this.root = null;
@@ -286,8 +312,11 @@ export class OverlayRenderer {
 
   private positionCard = (): void => {
     if (!this.card || !this.anchor) return;
-    const anchorRect =
-      typeof this.anchor === 'function' ? this.anchor() : this.anchor;
+    const anchorRect = isLiveOverlayAnchor(this.anchor)
+      ? this.anchor.getAnchorRect()
+      : typeof this.anchor === 'function'
+        ? this.anchor()
+        : this.anchor;
     if (!anchorRect) {
       this.close();
       this.actions.onClose();
@@ -331,5 +360,30 @@ export class OverlayRenderer {
     view.removeEventListener('scroll', this.positionCard, true);
     view.removeEventListener('resize', this.positionCard);
     this.listening = false;
+  }
+
+  private startAnchorObservers(): void {
+    if (!this.anchor || !isLiveOverlayAnchor(this.anchor)) return;
+    const root = this.doc.documentElement;
+    const view = this.doc.defaultView;
+    if (root && view?.MutationObserver) {
+      this.mutationObserver = new view.MutationObserver(this.positionCard);
+      this.mutationObserver.observe(root, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+      });
+    }
+    if (view?.ResizeObserver) {
+      this.resizeObserver = new view.ResizeObserver(this.positionCard);
+      this.resizeObserver.observe(this.anchor.element);
+    }
+  }
+
+  private stopAnchorObservers(): void {
+    this.mutationObserver?.disconnect();
+    this.resizeObserver?.disconnect();
+    this.mutationObserver = null;
+    this.resizeObserver = null;
   }
 }

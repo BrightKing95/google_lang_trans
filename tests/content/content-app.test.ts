@@ -101,6 +101,20 @@ describe('content app composition', () => {
     cleanup();
     expect(harness.controller.stop).toHaveBeenCalledOnce();
   });
+
+  it('stops the controller when startup settings cannot be loaded', async () => {
+    const harness = createContentAppHarness();
+    vi.mocked(harness.dependencies.loadSettings).mockRejectedValueOnce(
+      new Error('storage'),
+    );
+
+    await expect(startContentApp(harness.dependencies)).rejects.toThrow(
+      'storage',
+    );
+
+    expect(harness.controller.stop).toHaveBeenCalledOnce();
+    expect(harness.dependencies.watchSettings).not.toHaveBeenCalled();
+  });
 });
 
 describe('translation actions', () => {

@@ -26,6 +26,8 @@ interface CachedResult {
   state: Extract<TerminalTranslationState, { kind: 'success' }>;
 }
 
+type StateListener = (state: TranslationState) => void;
+
 class EngineDestroyedError extends Error {
   constructor() {
     super('Translation engine was destroyed');
@@ -55,8 +57,13 @@ function errorName(error: unknown): string | undefined {
 export class TranslationEngine {
   private detectorPromise?: Promise<DetectorPort>;
   private detectorModel?: DetectorPort;
+  private readonly detectorProgressListeners = new Set<StateListener>();
   private readonly translatorPromises = new Map<string, Promise<TranslatorPort>>();
   private readonly translatorModels = new Map<string, TranslatorPort>();
+  private readonly translatorProgressListeners = new Map<
+    string,
+    Set<StateListener>
+  >();
   private readonly translatorNeedsActivation = new Set<string>();
   private readonly sourceCache = new Map<string, CachedSource>();
   private readonly resultCache = new Map<string, CachedResult>();
@@ -84,8 +91,8 @@ export class TranslationEngine {
     // create() must run before the user-activation task yields. Prime only
     // model work whose identity is already known at method entry.
     if (options.userActivated) {
-      if (!cachedSource && !this.detectorPromise) {
-        primedDetector = this.startDetectorCreation(onState);
+      if (!cachedSource && !this.detectorModel) {
+        primedDetector = this.subscribeDetectorCreation(onState);
       } else if (cachedSource) {
         const pair = {
           sourceLanguage: cachedSource.normalized,
@@ -94,9 +101,9 @@ export class TranslationEngine {
         const pairKey = this.pairKey(pair);
         if (
           this.translatorNeedsActivation.has(pairKey) &&
-          !this.translatorPromises.has(pairKey)
+          !this.translatorModels.has(pairKey)
         ) {
-          primedTranslator = this.startTranslatorCreation(pair, onState);
+          primedTranslator = this.subscribeTranslatorCreation(pair, onState);
         }
       }
     }
@@ -150,8 +157,10 @@ export class TranslationEngine {
     }
     this.detectorModel = undefined;
     this.detectorPromise = undefined;
+    this.detectorProgressListeners.clear();
     this.translatorModels.clear();
     this.translatorPromises.clear();
+    this.translatorProgressListeners.clear();
     this.translatorNeedsActivation.clear();
     this.sourceCache.clear();
     this.resultCache.clear();
@@ -258,14 +267,22 @@ export class TranslationEngine {
       return { kind: 'ready', detector: this.detectorModel };
     }
     if (this.detectorPromise) {
-      onState({ kind: 'preparing' });
-      return { kind: 'ready', detector: await this.detectorPromise };
+      return {
+        kind: 'ready',
+        detector: await this.subscribeDetectorCreation(onState),
+      };
     }
 
     const availability = await this.adapter.detectorAvailability();
     this.assertAlive();
+    if (this.detectorModel) {
+      return { kind: 'ready', detector: this.detectorModel };
+    }
     if (this.detectorPromise) {
-      return { kind: 'ready', detector: await this.detectorPromise };
+      return {
+        kind: 'ready',
+        detector: await this.subscribeDetectorCreation(onState),
+      };
     }
     if (availability === 'unavailable') {
       return {
@@ -281,7 +298,7 @@ export class TranslationEngine {
     }
     return {
       kind: 'ready',
-      detector: await this.startDetectorCreation(onState),
+      detector: await this.subscribeDetectorCreation(onState),
     };
   }
 
@@ -297,15 +314,24 @@ export class TranslationEngine {
     if (ready) return { kind: 'ready', translator: ready };
     const existing = this.translatorPromises.get(key);
     if (existing) {
-      onState({ kind: 'preparing' });
-      return { kind: 'ready', translator: await existing };
+      return {
+        kind: 'ready',
+        translator: await this.subscribeTranslatorCreation(pair, onState),
+      };
     }
 
     const availability = await this.adapter.translatorAvailability(pair);
     this.assertAlive();
+    const readyAfterAvailability = this.translatorModels.get(key);
+    if (readyAfterAvailability) {
+      return { kind: 'ready', translator: readyAfterAvailability };
+    }
     const concurrent = this.translatorPromises.get(key);
     if (concurrent) {
-      return { kind: 'ready', translator: await concurrent };
+      return {
+        kind: 'ready',
+        translator: await this.subscribeTranslatorCreation(pair, onState),
+      };
     }
     if (availability === 'unavailable') {
       return {
@@ -326,21 +352,38 @@ export class TranslationEngine {
     }
     return {
       kind: 'ready',
-      translator: await this.startTranslatorCreation(pair, onState),
+      translator: await this.subscribeTranslatorCreation(pair, onState),
     };
   }
 
-  private startDetectorCreation(
-    onState: (state: TranslationState) => void,
+  private subscribeDetectorCreation(
+    onState: StateListener,
   ): Promise<DetectorPort> {
+    if (this.detectorModel) return Promise.resolve(this.detectorModel);
+    onState({ kind: 'preparing' });
+    this.detectorProgressListeners.add(onState);
+    try {
+      const promise =
+        this.detectorPromise ?? this.startDetectorCreation();
+      return promise.finally(() => {
+        this.detectorProgressListeners.delete(onState);
+      });
+    } catch (error) {
+      this.detectorProgressListeners.delete(onState);
+      throw error;
+    }
+  }
+
+  private startDetectorCreation(): Promise<DetectorPort> {
     if (this.detectorPromise) return this.detectorPromise;
     this.assertAlive();
     const generation = this.generation;
-    onState({ kind: 'preparing' });
     let tracked!: Promise<DetectorPort>;
     const created = this.adapter.createDetector(progress => {
       if (generation === this.generation) {
-        onState({ kind: 'preparing', progress });
+        for (const listener of this.detectorProgressListeners) {
+          listener({ kind: 'preparing', progress });
+        }
       }
     });
     tracked = created
@@ -361,20 +404,54 @@ export class TranslationEngine {
     return tracked;
   }
 
+  private subscribeTranslatorCreation(
+    pair: LanguagePair,
+    onState: StateListener,
+  ): Promise<TranslatorPort> {
+    const key = this.pairKey(pair);
+    const ready = this.translatorModels.get(key);
+    if (ready) return Promise.resolve(ready);
+    onState({ kind: 'preparing' });
+    let listeners = this.translatorProgressListeners.get(key);
+    if (!listeners) {
+      listeners = new Set();
+      this.translatorProgressListeners.set(key, listeners);
+    }
+    listeners.add(onState);
+    try {
+      const promise =
+        this.translatorPromises.get(key) ?? this.startTranslatorCreation(pair);
+      return promise.finally(() => {
+        const current = this.translatorProgressListeners.get(key);
+        current?.delete(onState);
+        if (current?.size === 0) {
+          this.translatorProgressListeners.delete(key);
+        }
+      });
+    } catch (error) {
+      listeners.delete(onState);
+      if (listeners.size === 0) {
+        this.translatorProgressListeners.delete(key);
+      }
+      throw error;
+    }
+  }
+
   private startTranslatorCreation(
     pair: LanguagePair,
-    onState: (state: TranslationState) => void,
   ): Promise<TranslatorPort> {
     const key = this.pairKey(pair);
     const existing = this.translatorPromises.get(key);
     if (existing) return existing;
     this.assertAlive();
     const generation = this.generation;
-    onState({ kind: 'preparing' });
     let tracked!: Promise<TranslatorPort>;
     const created = this.adapter.createTranslator(pair, progress => {
       if (generation === this.generation) {
-        onState({ kind: 'preparing', progress });
+        for (const listener of
+          this.translatorProgressListeners.get(key) ?? []) {
+          listener({ kind: 'preparing', progress });
+        }
       }
     });
     tracked = created

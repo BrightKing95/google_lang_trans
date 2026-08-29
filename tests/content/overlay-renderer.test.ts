@@ -218,6 +218,53 @@ describe('OverlayRenderer', () => {
     expect(document.querySelector('[data-quick-translate-host]')).toBeNull();
   });
 
+  it('repositions a live element anchor after a DOM mutation', async () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      rect(0, 0, 120, 60),
+    );
+    const source = document.createElement('p');
+    document.body.append(source);
+    let anchor = rect(10, 20, 80, 20);
+    const overlay = new OverlayRenderer(document, createActions(), message);
+    overlay.render(
+      { kind: 'translating', sourceLanguage: 'en' },
+      { element: source, getAnchorRect: () => anchor },
+    );
+    const card = capturedRoot.querySelector<HTMLElement>('[role="status"]')!;
+    expect(card.style.left).toBe('10px');
+    expect(card.style.top).toBe('48px');
+
+    anchor = rect(100, 120, 80, 20);
+    source.setAttribute('data-layout-version', '2');
+
+    await vi.waitFor(() => {
+      expect(card.style.left).toBe('100px');
+      expect(card.style.top).toBe('148px');
+    });
+  });
+
+  it('closes when a live element anchor is removed from the page', async () => {
+    const actions = createActions();
+    const source = document.createElement('p');
+    document.body.append(source);
+    const overlay = new OverlayRenderer(document, actions, message);
+    overlay.render(
+      { kind: 'translating', sourceLanguage: 'en' },
+      {
+        element: source,
+        getAnchorRect: () =>
+          source.isConnected ? rect(10, 20, 80, 20) : null,
+      },
+    );
+
+    source.remove();
+
+    await vi.waitFor(() => {
+      expect(actions.onClose).toHaveBeenCalledOnce();
+      expect(document.querySelector('[data-quick-translate-host]')).toBeNull();
+    });
+  });
+
   it('detects owned events and removes viewport listeners and host on close', () => {
     const add = vi.spyOn(window, 'addEventListener');
     const remove = vi.spyOn(window, 'removeEventListener');

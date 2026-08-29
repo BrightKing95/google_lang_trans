@@ -6,6 +6,7 @@ import type {
   TranslationState,
 } from '../translation/types';
 import type { TextCandidate } from './text-extractor';
+import type { OverlayAnchor } from './overlay-renderer';
 
 const HOVER_OPEN_DELAY = 500;
 const HOVER_CLOSE_DELAY = 250;
@@ -25,7 +26,7 @@ export interface OverlayPort {
   readonly pinned: boolean;
   render(
     state: TranslationState,
-    anchor: DOMRect | (() => DOMRect | null),
+    anchor: OverlayAnchor,
   ): void;
   containsEvent(event: Event): boolean;
   close(): void;
@@ -234,7 +235,7 @@ export class InteractionController {
         settings.targetLanguage,
         state => {
           if (requestId !== this.requestId) return;
-          this.overlay.render(state, candidate.getAnchorRect);
+          this.overlay.render(state, candidate);
           if (state.kind === 'same-language') {
             this.clearSameLanguageTimer();
             this.sameLanguageTimer = this.view.setTimeout(
@@ -249,7 +250,7 @@ export class InteractionController {
         if (requestId !== this.requestId) return;
         this.overlay.render(
           { kind: 'error', retryable: true },
-          candidate.getAnchorRect,
+          candidate,
         );
       });
   }
