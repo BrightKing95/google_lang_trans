@@ -1,7 +1,7 @@
 # Chrome 本机语言翻译扩展设计
 
 - 日期：2026-08-29
-- 状态：已完成交互评审，待书面规范复核
+- 状态：书面规范已确认
 - 工作名称：轻译（英文界面名 Quick Translate）
 
 ## 1. 概述
@@ -57,7 +57,7 @@
 - 总开关：启用或暂停当前扩展。
 - 模式分段开关：`选中文字` / `鼠标捕捉`，两者互斥。
 - 目标语言选择器：默认取 `chrome.i18n.getUILanguage()` 规范化后的语言；修改后永久保存。
-- 当前状态：可用、正在准备语言包或浏览器不支持。
+- 当前状态：可用或浏览器不支持。具体语言包的下载进度由触发翻译的网页浮层显示。
 
 设置保存到 `chrome.storage.local`。所有已打开网页通过 `chrome.storage.onChanged` 实时接收变更，无需刷新。
 
@@ -170,7 +170,7 @@ interface ExtensionSettings {
 type TranslationState =
   | { kind: 'preparing'; progress?: number }
   | { kind: 'translating'; sourceLanguage: string }
-  | { kind: 'success'; sourceLanguage: string; translatedText: string }
+  | { kind: 'success'; sourceLanguage: string; targetLanguage: string; translatedText: string }
   | { kind: 'same-language'; language: string }
   | { kind: 'unsupported'; sourceLanguage?: string; targetLanguage: string }
   | { kind: 'error'; retryable: boolean };
