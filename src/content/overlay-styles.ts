@@ -27,6 +27,12 @@ export const OVERLAY_STYLES = `
     animation: quick-translate-in 120ms ease-out;
   }
 
+  .card.compact {
+    min-width: 0;
+    padding: 4px;
+    border-radius: 999px;
+  }
+
   .header,
   .actions {
     display: flex;
@@ -65,6 +71,17 @@ export const OVERLAY_STYLES = `
   button:hover { background: color-mix(in srgb, CanvasText 13%, Canvas); }
   button[aria-pressed="true"] { color: #0b57d0; background: #e8f0fe; }
   button:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px; }
+  .activation-trigger {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+    border-radius: 999px;
+    color: #0b57d0;
+    font-weight: 750;
+    line-height: 1;
+  }
   .close { font-size: 17px; line-height: 1; }
 
   @keyframes quick-translate-in {

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { OverlayRenderer } from '../../src/content/overlay-renderer';
+import { OVERLAY_STYLES } from '../../src/content/overlay-styles';
 
 const rect = (x: number, y: number, width = 80, height = 20) =>
   new DOMRect(x, y, width, height);
@@ -162,6 +163,46 @@ describe('OverlayRenderer', () => {
       .click();
 
     expect(actions.onRetry).toHaveBeenCalledOnce();
+  });
+
+  it('renders passive activation as one compact accessible action', () => {
+    const actions = createActions();
+    const overlay = new OverlayRenderer(document, actions, message);
+
+    overlay.render({ kind: 'activation-available' }, rect(10, 10));
+
+    const card = capturedRoot.querySelector<HTMLElement>('.card')!;
+    const button = capturedRoot.querySelector<HTMLButtonElement>(
+      '[data-action="activate"]',
+    )!;
+    expect(card.classList.contains('compact')).toBe(true);
+    expect(button.title).toBe('prepareTranslation');
+    expect(button.getAttribute('aria-label')).toBe('prepareTranslation');
+    expect(button.textContent).toBe('译');
+    expect(capturedRoot.textContent).not.toContain('activationRequired');
+
+    button.click();
+    expect(actions.onRetry).toHaveBeenCalledOnce();
+  });
+
+  it('resets compact presentation when a full state replaces it', () => {
+    const overlay = new OverlayRenderer(document, createActions(), message);
+    const anchor = rect(10, 10);
+    overlay.render({ kind: 'activation-available' }, anchor);
+    overlay.render({ kind: 'preparing', progress: 0.2 }, anchor);
+
+    expect(
+      capturedRoot.querySelector('.card')?.classList.contains('compact'),
+    ).toBe(false);
+    expect(capturedRoot.textContent).toContain('statusPreparing');
+  });
+
+  it('defines a 32px compact activation target with visible focus', () => {
+    expect(OVERLAY_STYLES).toMatch(
+      /\.activation-trigger\s*{[^}]*min-width:\s*32px[^}]*min-height:\s*32px/s,
+    );
+    expect(OVERLAY_STYLES).toContain('.card.compact');
+    expect(OVERLAY_STYLES).toMatch(/button:focus-visible/);
   });
 
   it('keeps the card inside the viewport and flips above near the bottom', () => {

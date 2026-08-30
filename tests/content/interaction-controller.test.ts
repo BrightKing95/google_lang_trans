@@ -321,21 +321,14 @@ describe('InteractionController', () => {
     expect(harness.overlay.render).not.toHaveBeenCalled();
   });
 
-  it('retries activation-required model preparation as a user activation', async () => {
+  it('uses a compact activation state for passive hover', async () => {
     const harness = createControllerHarness({ mode: 'hover' });
     harness.engine.translate.mockImplementation(
-      async (_text, _target, onState, options) => {
-        const state = options?.userActivated
-          ? ({
-            kind: 'success',
-            sourceLanguage: 'en',
-            targetLanguage: 'zh',
-            translatedText: '你好',
-          } as const)
-          : ({
-            kind: 'activation-required',
-            phase: 'detector',
-          } as const);
+      async (_text, _target, onState) => {
+        const state = {
+          kind: 'activation-required',
+          phase: 'detector',
+        } as const;
         onState(state);
         return state;
       },
@@ -346,13 +339,64 @@ describe('InteractionController', () => {
     );
     await vi.advanceTimersByTimeAsync(500);
 
-    harness.controller.retry();
+    expect(harness.overlay.render).toHaveBeenCalledWith(
+      { kind: 'activation-available' },
+      harness.candidate,
+    );
+    expect(harness.overlay.render).not.toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'activation-required' }),
+      expect.anything(),
+    );
+  });
 
-    expect(harness.engine.translate).toHaveBeenLastCalledWith(
+  it('keeps full activation prompts for explicit selection and retry', async () => {
+    const hover = createControllerHarness({ mode: 'hover' });
+    hover.engine.translate.mockImplementation(
+      async (_text, _target, onState, options) => {
+        const state = {
+          kind: 'activation-required',
+          phase: options?.userActivated ? 'translator' : 'detector',
+        } as const;
+        onState(state);
+        return state;
+      },
+    );
+    hover.controller.start(hover.settings);
+    hover.target.dispatchEvent(
+      new PointerEvent('pointerover', { bubbles: true }),
+    );
+    await vi.advanceTimersByTimeAsync(500);
+
+    hover.controller.retry();
+
+    expect(hover.engine.translate).toHaveBeenLastCalledWith(
       'Hello world',
       'zh',
       expect.any(Function),
       { userActivated: true },
+    );
+    expect(hover.overlay.render).toHaveBeenLastCalledWith(
+      { kind: 'activation-required', phase: 'translator' },
+      hover.candidate,
+    );
+
+    const selection = createControllerHarness({ mode: 'selection' });
+    selection.engine.translate.mockImplementation(
+      async (_text, _target, onState) => {
+        const state = {
+          kind: 'activation-required',
+          phase: 'detector',
+        } as const;
+        onState(state);
+        return state;
+      },
+    );
+    selection.controller.start(selection.settings);
+    document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+
+    expect(selection.overlay.render).toHaveBeenLastCalledWith(
+      { kind: 'activation-required', phase: 'detector' },
+      selection.candidate,
     );
   });
 

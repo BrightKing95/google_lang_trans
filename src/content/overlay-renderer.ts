@@ -1,6 +1,10 @@
 import type { TranslationState } from '../translation/types';
 import { OVERLAY_STYLES } from './overlay-styles';
 
+export type OverlayState =
+  | TranslationState
+  | { kind: 'activation-available' };
+
 export interface OverlayActions {
   onCopy(text: string): void | Promise<void>;
   onSpeak(text: string, language: string): void;
@@ -52,10 +56,14 @@ export class OverlayRenderer {
     return this.isPinned;
   }
 
-  render(state: TranslationState, anchor: OverlayAnchor): void {
+  render(state: OverlayState, anchor: OverlayAnchor): void {
     this.ensureMounted();
     this.stopAnchorObservers();
     this.anchor = anchor;
+    this.card!.classList.toggle(
+      'compact',
+      state.kind === 'activation-available',
+    );
     this.card!.replaceChildren(this.renderState(state));
     this.positionCard();
     if (this.host) {
@@ -118,11 +126,14 @@ export class OverlayRenderer {
     this.card = card;
   }
 
-  private renderState(state: TranslationState): DocumentFragment {
+  private renderState(state: OverlayState): DocumentFragment {
     const fragment = this.doc.createDocumentFragment();
     switch (state.kind) {
       case 'preparing':
         this.renderPreparing(fragment, state.progress);
+        return fragment;
+      case 'activation-available':
+        this.renderActivationAvailable(fragment);
         return fragment;
       case 'activation-required':
         this.renderActivationRequired(fragment);
@@ -147,6 +158,18 @@ export class OverlayRenderer {
         );
         return fragment;
     }
+  }
+
+  private renderActivationAvailable(fragment: DocumentFragment): void {
+    const label = this.message('prepareTranslation');
+    const button = this.createButton(
+      'activate',
+      label,
+      '译',
+      () => this.actions.onRetry(),
+    );
+    button.classList.add('activation-trigger');
+    fragment.append(button);
   }
 
   private renderPreparing(
