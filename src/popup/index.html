@@ -8,36 +8,68 @@
   </head>
   <body>
     <main id="app">
-      <header>
-        <div>
-          <h1 data-i18n="extensionName">Quick Translate</h1>
-          <p id="status" role="status" data-state="preparing"></p>
+      <header class="hero">
+        <div class="hero-row">
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true">译</span>
+            <div>
+              <h1 data-i18n="extensionName">Quick Translate</h1>
+              <p class="tagline" data-i18n="extensionTagline">Translate as you browse</p>
+            </div>
+          </div>
+          <label class="enabled-switch" for="enabled">
+            <span class="sr-only" data-i18n="enabled">Enabled</span>
+            <input id="enabled" type="checkbox">
+            <span class="switch-track" aria-hidden="true"></span>
+          </label>
         </div>
+        <p id="status" role="status" data-state="preparing"></p>
       </header>
 
-      <label class="switch-row" for="enabled">
-        <span data-i18n="enabled">Enabled</span>
-        <input id="enabled" type="checkbox">
-      </label>
+      <section class="settings">
+        <fieldset>
+          <legend data-i18n="modeLabel">Translation mode</legend>
+          <div class="mode-options">
+            <label class="mode-option" for="mode-selection">
+              <input id="mode-selection" type="radio" name="mode" value="selection"
+                aria-labelledby="mode-selection-label"
+                aria-describedby="mode-selection-description">
+              <span class="mode-icon" aria-hidden="true">⌁</span>
+              <span class="mode-copy">
+                <span id="mode-selection-label" class="mode-title"
+                  data-i18n="modeSelection">Select text</span>
+                <span id="mode-selection-description" class="mode-description"
+                  data-i18n="modeSelectionDescription">Translate after selecting text</span>
+              </span>
+            </label>
+            <label class="mode-option" for="mode-hover">
+              <input id="mode-hover" type="radio" name="mode" value="hover"
+                aria-labelledby="mode-hover-label"
+                aria-describedby="mode-hover-description">
+              <span class="mode-icon" aria-hidden="true">◎</span>
+              <span class="mode-copy">
+                <span id="mode-hover-label" class="mode-title"
+                  data-i18n="modeHover">Mouse capture</span>
+                <span id="mode-hover-description" class="mode-description"
+                  data-i18n="modeHoverDescription">Translate after hovering for 500 ms</span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
 
-      <fieldset>
-        <legend data-i18n="modeLabel">Translation mode</legend>
-        <div class="mode-options">
-          <label>
-            <input type="radio" name="mode" value="selection">
-            <span data-i18n="modeSelection">Select text</span>
-          </label>
-          <label>
-            <input type="radio" name="mode" value="hover">
-            <span data-i18n="modeHover">Mouse capture</span>
-          </label>
+        <div class="target-field">
+          <label for="target-language" data-i18n="targetLanguage">Target language</label>
+          <div class="select-shell">
+            <span class="language-icon" aria-hidden="true">◎</span>
+            <select id="target-language"></select>
+          </div>
         </div>
-      </fieldset>
 
-      <div class="target-field">
-        <label for="target-language" data-i18n="targetLanguage">Target language</label>
-        <select id="target-language"></select>
-      </div>
+        <p class="privacy-note">
+          <span aria-hidden="true">◇</span>
+          <span data-i18n="privacyNotice">Translated locally by Chrome · Page content is not uploaded</span>
+        </p>
+      </section>
     </main>
     <script src="popup.js"></script>
   </body>

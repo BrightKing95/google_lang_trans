@@ -55,4 +55,25 @@ describe('i18n helpers', () => {
     expect(Object.keys(en).sort()).toEqual(expected);
     expect(Object.keys(zh).sort()).toEqual(expected);
   });
+
+  it('includes every popup visual-refresh message in both catalogs', () => {
+    const required = [
+      'extensionTagline',
+      'modeSelectionDescription',
+      'modeHoverDescription',
+      'privacyNotice',
+    ];
+    const en = JSON.parse(
+      readFileSync('src/_locales/en/messages.json', 'utf8'),
+    ) as Record<string, { message: string }>;
+    const zh = JSON.parse(
+      readFileSync('src/_locales/zh_CN/messages.json', 'utf8'),
+    ) as Record<string, { message: string }>;
+
+    expect(MESSAGE_KEYS).toEqual(expect.arrayContaining(required));
+    for (const key of required) {
+      expect(en[key]?.message).toBeTruthy();
+      expect(zh[key]?.message).toBeTruthy();
+    }
+  });
 });

@@ -5,6 +5,18 @@
   "extensionDescription": {
     "message": "使用 Chrome 本机能力翻译选中或悬停捕捉的文字。"
   },
+  "extensionTagline": {
+    "message": "让网页阅读更顺畅"
+  },
+  "modeSelectionDescription": {
+    "message": "划选后立即翻译"
+  },
+  "modeHoverDescription": {
+    "message": "悬停 500 毫秒后翻译"
+  },
+  "privacyNotice": {
+    "message": "Chrome 本地翻译 · 网页内容不会上传"
+  },
   "enabled": {
     "message": "已启用"
   },

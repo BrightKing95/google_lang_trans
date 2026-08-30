@@ -246,14 +246,32 @@ describe('initializePopup', () => {
   });
 });
 
-it('keeps scripts external and labels every form control in popup source', () => {
+it('keeps scripts external and exposes the branded accessible structure', () => {
   const html = readFileSync('src/popup/index.html', 'utf8');
   expect(html).not.toMatch(/<script[^>]*>\s*[^<]/i);
   const parsed = new DOMParser().parseFromString(html, 'text/html');
+
+  expect(parsed.querySelector('.brand-mark')?.textContent).toBe('译');
+  for (const key of [
+    'extensionTagline',
+    'modeSelectionDescription',
+    'modeHoverDescription',
+    'privacyNotice',
+  ]) {
+    expect(parsed.querySelector(`[data-i18n="${key}"]`)).not.toBeNull();
+  }
+
   for (const control of parsed.querySelectorAll('input,select')) {
     const id = control.getAttribute('id');
     const wrapped = control.closest('label');
     const explicit = id ? parsed.querySelector(`label[for="${id}"]`) : null;
     expect(wrapped ?? explicit).not.toBeNull();
   }
+
+  expect(
+    parsed.querySelector('#mode-selection')?.getAttribute('aria-describedby'),
+  ).toBe('mode-selection-description');
+  expect(
+    parsed.querySelector('#mode-hover')?.getAttribute('aria-describedby'),
+  ).toBe('mode-hover-description');
 });

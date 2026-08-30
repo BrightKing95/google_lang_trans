@@ -3,6 +3,10 @@ import type { SupportedLanguage } from './languages';
 export const MESSAGE_KEYS = [
   'extensionName',
   'extensionDescription',
+  'extensionTagline',
+  'modeSelectionDescription',
+  'modeHoverDescription',
+  'privacyNotice',
   'enabled',
   'modeLabel',
   'modeSelection',
