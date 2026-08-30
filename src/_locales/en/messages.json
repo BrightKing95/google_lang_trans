@@ -1,0 +1,95 @@
+{
+  "extensionName": {
+    "message": "Quick Translate"
+  },
+  "extensionDescription": {
+    "message": "Translate selected or hovered text locally in Chrome."
+  },
+  "extensionTagline": {
+    "message": "Translate as you browse"
+  },
+  "modeSelectionDescription": {
+    "message": "Translate after selecting text"
+  },
+  "modeHoverDescription": {
+    "message": "Translate after hovering for 500 ms"
+  },
+  "privacyNotice": {
+    "message": "Translated locally by Chrome · Page content is not uploaded"
+  },
+  "enabled": {
+    "message": "Enabled"
+  },
+  "modeLabel": {
+    "message": "Translation mode"
+  },
+  "modeSelection": {
+    "message": "Select text"
+  },
+  "modeHover": {
+    "message": "Mouse capture"
+  },
+  "targetLanguage": {
+    "message": "Target language"
+  },
+  "statusReady": {
+    "message": "Ready"
+  },
+  "statusPreparing": {
+    "message": "Preparing translation…"
+  },
+  "statusUnsupported": {
+    "message": "Chrome 138 or later is required"
+  },
+  "statusApiUnavailable": {
+    "message": "Built-in translation is unavailable"
+  },
+  "settingsSaveFailed": {
+    "message": "Settings could not be saved"
+  },
+  "settingsLoadFailed": {
+    "message": "Settings could not be loaded"
+  },
+  "activationRequired": {
+    "message": "Chrome needs your confirmation to prepare this language"
+  },
+  "prepareTranslation": {
+    "message": "Prepare and translate"
+  },
+  "detecting": {
+    "message": "Detecting language…"
+  },
+  "translating": {
+    "message": "Translating…"
+  },
+  "sameLanguage": {
+    "message": "Content is already in the target language"
+  },
+  "unsupportedPair": {
+    "message": "This language pair is not supported"
+  },
+  "translationFailed": {
+    "message": "Translation could not be completed"
+  },
+  "retry": {
+    "message": "Retry"
+  },
+  "copy": {
+    "message": "Copy"
+  },
+  "copied": {
+    "message": "Copied"
+  },
+  "speak": {
+    "message": "Listen"
+  },
+  "pin": {
+    "message": "Pin"
+  },
+  "unpin": {
+    "message": "Unpin"
+  },
+  "close": {
+    "message": "Close"
+  }
+}

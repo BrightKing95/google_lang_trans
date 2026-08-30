@@ -1,0 +1,95 @@
+{
+  "extensionName": {
+    "message": "轻译"
+  },
+  "extensionDescription": {
+    "message": "使用 Chrome 本机能力翻译选中或悬停捕捉的文字。"
+  },
+  "extensionTagline": {
+    "message": "让网页阅读更顺畅"
+  },
+  "modeSelectionDescription": {
+    "message": "划选后立即翻译"
+  },
+  "modeHoverDescription": {
+    "message": "悬停 500 毫秒后翻译"
+  },
+  "privacyNotice": {
+    "message": "Chrome 本地翻译 · 网页内容不会上传"
+  },
+  "enabled": {
+    "message": "已启用"
+  },
+  "modeLabel": {
+    "message": "翻译模式"
+  },
+  "modeSelection": {
+    "message": "选中文字"
+  },
+  "modeHover": {
+    "message": "鼠标捕捉"
+  },
+  "targetLanguage": {
+    "message": "目标语言"
+  },
+  "statusReady": {
+    "message": "已就绪"
+  },
+  "statusPreparing": {
+    "message": "正在准备翻译能力…"
+  },
+  "statusUnsupported": {
+    "message": "需要 Chrome 138 或更高版本"
+  },
+  "statusApiUnavailable": {
+    "message": "当前无法使用内置翻译功能"
+  },
+  "settingsSaveFailed": {
+    "message": "设置保存失败"
+  },
+  "settingsLoadFailed": {
+    "message": "设置加载失败"
+  },
+  "activationRequired": {
+    "message": "Chrome 需要你的确认以准备该语言能力"
+  },
+  "prepareTranslation": {
+    "message": "准备并翻译"
+  },
+  "detecting": {
+    "message": "正在检测语言…"
+  },
+  "translating": {
+    "message": "正在翻译…"
+  },
+  "sameLanguage": {
+    "message": "内容已经是目标语言"
+  },
+  "unsupportedPair": {
+    "message": "当前语言组合暂不受支持"
+  },
+  "translationFailed": {
+    "message": "翻译未完成"
+  },
+  "retry": {
+    "message": "重试"
+  },
+  "copy": {
+    "message": "复制"
+  },
+  "copied": {
+    "message": "已复制"
+  },
+  "speak": {
+    "message": "朗读"
+  },
+  "pin": {
+    "message": "固定"
+  },
+  "unpin": {
+    "message": "取消固定"
+  },
+  "close": {
+    "message": "关闭"
+  }
+}

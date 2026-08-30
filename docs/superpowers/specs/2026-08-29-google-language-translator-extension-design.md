@@ -149,7 +149,7 @@ interface ExtensionSettings {
 - 从 Selection 或候选元素读取纯文本。悬停候选从事件目标向上查找最近的 `p`、`li`、`h1`–`h6`、`td`、`th`、`blockquote` 或 `figcaption`；没有匹配时使用最近的、包含直接可见文本且不是 `body`/`main`/`article` 的元素。
 - 合并连续空白、去除首尾空白并限制长度。
 - 排除隐藏内容、表单控件、编辑区域、脚本、样式和扩展宿主节点。
-- 返回文本及定位所需的 `DOMRect`。
+- 返回文本及可重新读取定位矩形的锚点函数；源节点移除后锚点失效并关闭浮层。
 
 该模块不依赖翻译 API，可独立测试。
 
@@ -164,11 +164,14 @@ interface ExtensionSettings {
 - 查询 `Translator.availability()`，区分 `available`、`downloadable`、`downloading` 和 `unavailable`。
 - 按源语言/目标语言对缓存 Translator 实例。
 - 首次创建时监听 `downloadprogress` 并上报 UI。
+- 当模型下载需要瞬时用户激活时返回专用提示；用户点击“准备并翻译”后在该事件任务内同步发起 `create()`。检测器和翻译器首次下载可能分别需要一次确认。
+- 共享并发模型创建 Promise，在销毁后回收迟到的模型实例。
 - 执行翻译并返回结构化结果，不直接操作 DOM。
 
 ```ts
 type TranslationState =
   | { kind: 'preparing'; progress?: number }
+  | { kind: 'activation-required'; phase: 'detector' | 'translator' }
   | { kind: 'translating'; sourceLanguage: string }
   | { kind: 'success'; sourceLanguage: string; targetLanguage: string; translatedText: string }
   | { kind: 'same-language'; language: string }
