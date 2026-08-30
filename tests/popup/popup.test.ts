@@ -275,3 +275,18 @@ it('keeps scripts external and exposes the branded accessible structure', () => 
     parsed.querySelector('#mode-hover')?.getAttribute('aria-describedby'),
   ).toBe('mode-hover-description');
 });
+
+it('defines the approved dimensions, themes, and focus contracts', () => {
+  const css = readFileSync('src/popup/popup.css', 'utf8');
+
+  expect(css).toMatch(/body\s*{[^}]*width:\s*336px/s);
+  expect(css).toContain('.brand-mark');
+  expect(css).toContain('.enabled-switch');
+  expect(css).toContain('.mode-option');
+  expect(css).toContain('.privacy-note');
+  expect(css).toMatch(/@media\s*\(prefers-color-scheme:\s*dark\)/);
+  expect(css).toMatch(/\.mode-option:has\(input:focus-visible\)/);
+  expect(css).not.toMatch(
+    /\.mode-option\s+input\s*{[^}]*display:\s*none/s,
+  );
+});
