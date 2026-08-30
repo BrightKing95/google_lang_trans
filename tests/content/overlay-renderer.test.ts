@@ -265,6 +265,39 @@ describe('OverlayRenderer', () => {
     });
   });
 
+  it('coalesces observed layout changes into one animation frame', async () => {
+    let resizeCallback!: ResizeObserverCallback;
+    class FakeResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        resizeCallback = callback;
+      }
+      observe(): void {}
+      disconnect(): void {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    const requestFrame = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(() => 42);
+    const source = document.createElement('p');
+    document.body.append(source);
+    const getAnchorRect = vi.fn(() => rect(10, 20, 80, 20));
+    const overlay = new OverlayRenderer(document, createActions(), message);
+    overlay.render(
+      { kind: 'translating', sourceLanguage: 'en' },
+      { element: source, getAnchorRect },
+    );
+    const initialFrameCount = requestFrame.mock.calls.length;
+
+    resizeCallback([], {} as ResizeObserver);
+    resizeCallback([], {} as ResizeObserver);
+    expect(requestFrame).toHaveBeenCalledTimes(initialFrameCount + 1);
+    const frameCallback = requestFrame.mock.calls[initialFrameCount]![0];
+
+    expect(requestFrame).toHaveBeenCalledTimes(initialFrameCount + 1);
+    frameCallback(0);
+    expect(getAnchorRect).toHaveBeenCalledTimes(2);
+  });
+
   it('detects owned events and removes viewport listeners and host on close', () => {
     const add = vi.spyOn(window, 'addEventListener');
     const remove = vi.spyOn(window, 'removeEventListener');

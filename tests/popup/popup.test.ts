@@ -178,6 +178,44 @@ describe('initializePopup', () => {
     });
   });
 
+  it('keeps the last confirmed settings when a later overlapping write fails', async () => {
+    const user = userEvent.setup();
+    let resolveFirst!: (settings: ExtensionSettings) => void;
+    let rejectSecond!: (error: Error) => void;
+    settingsMocks.updateSettings
+      .mockImplementationOnce(
+        () => new Promise(resolve => {
+          resolveFirst = resolve;
+        }),
+      )
+      .mockImplementationOnce(
+        () => new Promise((_resolve, reject) => {
+          rejectSecond = reject;
+        }),
+      );
+    await initializePopup();
+    const checkbox = screen.getByRole('checkbox', {
+      name: 'Enabled',
+    }) as HTMLInputElement;
+    const target = screen.getByRole('combobox', {
+      name: 'Target language',
+    }) as HTMLSelectElement;
+
+    await user.click(checkbox);
+    await user.selectOptions(target, 'ja');
+    resolveFirst({ ...initial, enabled: false });
+    await waitFor(() => expect(checkbox.checked).toBe(false));
+    rejectSecond(new Error('storage'));
+
+    await waitFor(() => {
+      expect(checkbox.checked).toBe(false);
+      expect(target.value).toBe('zh');
+      expect(screen.getByRole('status').textContent).toBe(
+        'Settings could not be saved',
+      );
+    });
+  });
+
   it('shows an inert error state when settings cannot be loaded', async () => {
     settingsMocks.loadSettings.mockRejectedValueOnce(new Error('storage'));
 

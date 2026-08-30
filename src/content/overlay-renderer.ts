@@ -39,6 +39,7 @@ export class OverlayRenderer {
   private listening = false;
   private mutationObserver: MutationObserver | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private positionFrame: number | null = null;
   private isPinned = false;
 
   constructor(
@@ -328,6 +329,15 @@ export class OverlayRenderer {
     this.card.style.top = `${top}px`;
   };
 
+  private schedulePositionCard = (): void => {
+    if (this.positionFrame !== null) return;
+    const view = this.doc.defaultView ?? window;
+    this.positionFrame = view.requestAnimationFrame(() => {
+      this.positionFrame = null;
+      this.positionCard();
+    });
+  };
+
   private position(
     anchor: DOMRect,
     overlay: DOMRect,
@@ -367,7 +377,9 @@ export class OverlayRenderer {
     const root = this.doc.documentElement;
     const view = this.doc.defaultView;
     if (root && view?.MutationObserver) {
-      this.mutationObserver = new view.MutationObserver(this.positionCard);
+      this.mutationObserver = new view.MutationObserver(
+        this.schedulePositionCard,
+      );
       this.mutationObserver.observe(root, {
         attributes: true,
         childList: true,
@@ -375,7 +387,7 @@ export class OverlayRenderer {
       });
     }
     if (view?.ResizeObserver) {
-      this.resizeObserver = new view.ResizeObserver(this.positionCard);
+      this.resizeObserver = new view.ResizeObserver(this.schedulePositionCard);
       this.resizeObserver.observe(this.anchor.element);
     }
   }
@@ -383,6 +395,11 @@ export class OverlayRenderer {
   private stopAnchorObservers(): void {
     this.mutationObserver?.disconnect();
     this.resizeObserver?.disconnect();
+    if (this.positionFrame !== null) {
+      const view = this.doc.defaultView ?? window;
+      view.cancelAnimationFrame(this.positionFrame);
+      this.positionFrame = null;
+    }
     this.mutationObserver = null;
     this.resizeObserver = null;
   }

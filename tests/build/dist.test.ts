@@ -87,3 +87,29 @@ it('rejects a protocol-relative asset inserted into built HTML', () => {
     rmSync(temporary, { recursive: true, force: true });
   }
 });
+
+it.each([
+  [
+    'popup.html',
+    '<!doctype html><img srcset="//example.com/image.png 1x">',
+  ],
+  ['popup.js', 'import("//example.com/module.js")'],
+  ['popup.js', 'new URL("//example.com/data.json")'],
+])('rejects protocol-relative URLs in %s regardless of sink', (relative, source) => {
+  const temporary = mkdtempSync(join(tmpdir(), 'quick-translate-dist-'));
+  const fixture = join(temporary, 'dist');
+  cpSync('dist', fixture, { recursive: true });
+  writeFileSync(join(fixture, relative), source);
+
+  try {
+    expect(() =>
+      execFileSync(
+        process.execPath,
+        ['scripts/validate-dist.mjs', fixture],
+        { stdio: 'pipe' },
+      ),
+    ).toThrow(/forbidden protocol-relative URL/);
+  } finally {
+    rmSync(temporary, { recursive: true, force: true });
+  }
+});

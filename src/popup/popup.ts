@@ -91,7 +91,7 @@ export async function initializePopup(): Promise<() => void> {
       render(currentSettings);
       renderCapability();
     } catch {
-      render(previous);
+      render(currentSettings);
       status.dataset.state = 'error';
       status.textContent = message('settingsSaveFailed');
     }

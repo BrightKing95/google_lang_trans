@@ -62,7 +62,7 @@ const forbidden = [
   {
     label: 'protocol-relative URL',
     pattern:
-      /(?:\b(?:src|href)\s*=\s*["']|\b(?:fetch|importScripts)\s*\(\s*["']|url\(\s*["']?|@import\s+["']?)\/\//i,
+      /(?:["'`]|\burl\(\s*|=\s*)\/\/[^/"'`\s)]+(?:[/?#\s"'`)])/i,
   },
   { label: 'eval', pattern: /\beval\s*\(/ },
   { label: 'Function constructor', pattern: /\bnew\s+Function\b/ },
