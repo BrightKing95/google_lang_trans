@@ -8,12 +8,15 @@
   --surface: #fbfcff;
   --surface-raised: #ffffff;
   --text: #20283a;
-  --muted: #737b8c;
-  --subtle: #8a91a0;
+  --tagline: #5f697d;
+  --mode-text: #626c7f;
+  --muted: #626d80;
+  --subtle: #657084;
+  --privacy: #657084;
   --border: #e1e6ef;
   --focus: #2f78ed;
-  --ready: #1d8f59;
-  --warning: #b66a00;
+  --ready: #157348;
+  --warning: #925300;
   --danger: #b3261e;
 }
 
@@ -83,7 +86,7 @@ h1 {
 
 .tagline {
   margin: 4px 0 0;
-  color: #6d7588;
+  color: var(--tagline);
   font-size: 10.5px;
 }
 
@@ -215,7 +218,7 @@ legend,
   border-radius: 13px;
   background: var(--surface-raised);
   box-shadow: 0 5px 15px rgba(34, 51, 84, 0.045);
-  color: #626c7f;
+  color: var(--mode-text);
   cursor: pointer;
 }
 
@@ -321,7 +324,7 @@ select:disabled {
   margin: 16px 0 0;
   padding-top: 14px;
   border-top: 1px solid #edf0f5;
-  color: #7e889a;
+  color: var(--privacy);
   font-size: 9.5px;
   line-height: 1.45;
 }
@@ -350,8 +353,11 @@ select:disabled {
     --surface: #1d2533;
     --surface-raised: #252e3e;
     --text: #ecf1fa;
-    --muted: #9ba7b9;
-    --subtle: #8996a9;
+    --tagline: #bdc8d8;
+    --mode-text: #b9c5d6;
+    --muted: #aeb9ca;
+    --subtle: #aab7c9;
+    --privacy: #aab7c9;
     --border: #3a4558;
     --focus: #8eb0ff;
     --ready: #8be4b5;
@@ -361,10 +367,6 @@ select:disabled {
 
   .hero {
     background: linear-gradient(135deg, #243b59, #2e3154);
-  }
-
-  .tagline {
-    color: #aeb9ca;
   }
 
   #status {
@@ -386,7 +388,6 @@ select:disabled {
 
   .privacy-note {
     border-top-color: #303a4b;
-    color: #96a3b6;
   }
 }
 

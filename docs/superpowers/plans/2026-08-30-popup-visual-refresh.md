@@ -462,4 +462,3 @@ git push origin feature/google-language-translator
 ```
 
 Expected: `https://github.com/favowang/google_lang_trans/pull/1` includes the popup refresh commits.
-

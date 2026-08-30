@@ -8,6 +8,44 @@ import { initializePopup } from '../../src/popup/popup';
 import type { ExtensionSettings } from '../../src/shared/settings';
 import { resetChromeStorageFake } from '../setup';
 
+function cssHexVariables(block: string): Record<string, string> {
+  return Object.fromEntries(
+    [...block.matchAll(/--([\w-]+):\s*(#[\da-f]{6})/gi)].map(match => [
+      match[1],
+      match[2],
+    ]),
+  );
+}
+
+function relativeLuminance(hex: string): number {
+  const channels = hex
+    .slice(1)
+    .match(/.{2}/g)!
+    .map(value => Number.parseInt(value, 16) / 255)
+    .map(value =>
+      value <= 0.04045
+        ? value / 12.92
+        : ((value + 0.055) / 1.055) ** 2.4,
+    );
+  return (
+    channels[0]! * 0.2126 +
+    channels[1]! * 0.7152 +
+    channels[2]! * 0.0722
+  );
+}
+
+function contrastRatio(foreground: string, background: string): number {
+  const lighter = Math.max(
+    relativeLuminance(foreground),
+    relativeLuminance(background),
+  );
+  const darker = Math.min(
+    relativeLuminance(foreground),
+    relativeLuminance(background),
+  );
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 const settingsMocks = vi.hoisted(() => ({
   loadSettings: vi.fn<() => Promise<ExtensionSettings>>(),
   updateSettings:
@@ -289,4 +327,40 @@ it('defines the approved dimensions, themes, and focus contracts', () => {
   expect(css).not.toMatch(
     /\.mode-option\s+input\s*{[^}]*display:\s*none/s,
   );
+});
+
+it('keeps small popup text at accessible contrast in both themes', () => {
+  const css = readFileSync('src/popup/popup.css', 'utf8');
+  const lightBlock = css.match(/:root\s*{([^}]*)}/s)?.[1] ?? '';
+  const darkBlock =
+    css.match(
+      /@media\s*\(prefers-color-scheme:\s*dark\)\s*{\s*:root\s*{([^}]*)}/s,
+    )?.[1] ?? '';
+  const light = cssHexVariables(lightBlock);
+  const dark = cssHexVariables(darkBlock);
+
+  for (const [foreground, background] of [
+    [light['tagline'], '#e9f5ff'],
+    [light['mode-text'], light['surface-raised']],
+    [light['muted'], light['surface']],
+    [light['subtle'], light['surface-raised']],
+    [light['subtle'], light['accent-soft']],
+    [light['privacy'], light['surface']],
+    [light['ready'], '#e9f5ff'],
+    [light['warning'], '#e9f5ff'],
+    [dark['tagline'], '#2e3154'],
+    [dark['mode-text'], dark['surface-raised']],
+    [dark['muted'], dark['surface']],
+    [dark['subtle'], dark['surface-raised']],
+    [dark['subtle'], dark['accent-soft']],
+    [dark['privacy'], dark['surface']],
+    [dark['ready'], '#243b59'],
+    [dark['warning'], '#243b59'],
+  ] as const) {
+    expect(foreground).toMatch(/^#[\da-f]{6}$/i);
+    expect(background).toMatch(/^#[\da-f]{6}$/i);
+    expect(contrastRatio(foreground!, background!)).toBeGreaterThanOrEqual(
+      4.5,
+    );
+  }
 });
