@@ -205,6 +205,18 @@ describe('OverlayRenderer', () => {
     expect(OVERLAY_STYLES).toMatch(/button:focus-visible/);
   });
 
+  it('uses theme-aware system colors for activation and keyboard focus', () => {
+    expect(OVERLAY_STYLES).toMatch(
+      /\.activation-trigger\s*{[^}]*color:\s*LinkText/s,
+    );
+    expect(OVERLAY_STYLES).toMatch(
+      /button:focus-visible\s*{[^}]*outline:\s*2px solid Highlight/s,
+    );
+    expect(OVERLAY_STYLES).not.toMatch(
+      /(?:\.activation-trigger|button:focus-visible)\s*{[^}]*#0b57d0/s,
+    );
+  });
+
   it('keeps the card inside the viewport and flips above near the bottom', () => {
     vi.stubGlobal('innerWidth', 320);
     vi.stubGlobal('innerHeight', 240);

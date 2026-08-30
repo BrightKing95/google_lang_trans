@@ -70,7 +70,7 @@ export const OVERLAY_STYLES = `
 
   button:hover { background: color-mix(in srgb, CanvasText 13%, Canvas); }
   button[aria-pressed="true"] { color: #0b57d0; background: #e8f0fe; }
-  button:focus-visible { outline: 2px solid #0b57d0; outline-offset: 2px; }
+  button:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
   .activation-trigger {
     width: 32px;
     min-width: 32px;
@@ -78,7 +78,7 @@ export const OVERLAY_STYLES = `
     min-height: 32px;
     padding: 0;
     border-radius: 999px;
-    color: #0b57d0;
+    color: LinkText;
     font-weight: 750;
     line-height: 1;
   }
