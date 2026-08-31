@@ -336,4 +336,4 @@ Expected: all checks pass on the exact tree to be pushed.
 git push origin feature/google-language-translator
 ```
 
-Expected: the existing pull request at `https://github.com/favowang/google_lang_trans/pull/1` includes the passive-hover fix commits.
+Expected: the existing pull request at `https://github.com/BrightKing95/google_lang_trans/pull/1` includes the passive-hover fix commits.

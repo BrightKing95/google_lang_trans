@@ -461,4 +461,4 @@ Expected: fresh PASS output after the final code commit.
 git push origin feature/google-language-translator
 ```
 
-Expected: `https://github.com/favowang/google_lang_trans/pull/1` includes the popup refresh commits.
+Expected: `https://github.com/BrightKing95/google_lang_trans/pull/1` includes the popup refresh commits.

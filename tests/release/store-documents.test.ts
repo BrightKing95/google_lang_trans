@@ -21,7 +21,7 @@ it('rejects inconsistent privacy policy URLs between localizations', () => {
   writeFileSync(
     chineseListing,
     readFileSync(chineseListing, 'utf8').replace(
-      'https://github.com/favowang/google_lang_trans/blob/main/store-listing/privacy-policy.md',
+      'https://github.com/BrightKing95/google_lang_trans/blob/main/store-listing/privacy-policy.md',
       'https://example.com/different-privacy-policy.md',
     ),
   );
@@ -44,8 +44,8 @@ it('accepts a public HTTPS privacy policy URL without a Markdown suffix', () => 
   const fixture = join(temporary, 'store-listing');
   cpSync('store-listing', fixture, { recursive: true });
   const currentUrl =
-    'https://github.com/favowang/google_lang_trans/blob/main/store-listing/privacy-policy.md';
-  const hostedUrl = 'https://favowang.github.io/google_lang_trans/privacy';
+    'https://github.com/BrightKing95/google_lang_trans/blob/main/store-listing/privacy-policy.md';
+  const hostedUrl = 'https://brightking95.github.io/google_lang_trans/privacy';
 
   for (const relative of ['en.md', 'zh-CN.md', 'privacy-practices.md']) {
     const file = join(fixture, relative);

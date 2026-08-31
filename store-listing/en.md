@@ -35,4 +35,4 @@ English
 
 ## Privacy policy URL
 
-https://github.com/favowang/google_lang_trans/blob/main/store-listing/privacy-policy.md
+https://github.com/BrightKing95/google_lang_trans/blob/main/store-listing/privacy-policy.md

@@ -13,7 +13,7 @@
 - [ ] The release branch has been merged to `main` and pushed to GitHub.
 - [ ] The repository is public, or the privacy policy is hosted at another public HTTPS URL.
 - [ ] The privacy policy URL opens in an incognito window without signing in:
-      `https://github.com/favowang/google_lang_trans/blob/main/store-listing/privacy-policy.md`
+      `https://github.com/BrightKing95/google_lang_trans/blob/main/store-listing/privacy-policy.md`
 - [ ] The privacy policy URL entered in both localized listings is identical to the live URL.
 
 ## Package

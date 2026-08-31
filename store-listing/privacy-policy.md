@@ -32,7 +32,7 @@ The extension's content script is available on ordinary HTTP and HTTPS webpages 
 
 ### Changes and contact
 
-Material changes to this policy will be published in this repository before an extension update that depends on them is submitted. Questions and privacy requests can be opened at https://github.com/favowang/google_lang_trans/issues.
+Material changes to this policy will be published in this repository before an extension update that depends on them is submitted. Questions and privacy requests can be opened at https://github.com/BrightKing95/google_lang_trans/issues.
 
 ## 简体中文
 
@@ -64,4 +64,4 @@ Material changes to this policy will be published in this repository before an e
 
 ### 政策变更与联系
 
-如果本政策发生实质变化，相关内容会在依赖该变化的扩展更新提交之前发布到本仓库。如有问题或隐私请求，请通过 https://github.com/favowang/google_lang_trans/issues 联系。
+如果本政策发生实质变化，相关内容会在依赖该变化的扩展更新提交之前发布到本仓库。如有问题或隐私请求，请通过 https://github.com/BrightKing95/google_lang_trans/issues 联系。
