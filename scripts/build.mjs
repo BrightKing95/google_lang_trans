@@ -18,6 +18,7 @@ await build({
 });
 await cp('src/manifest.json', 'dist/manifest.json');
 await cp('src/_locales', 'dist/_locales', { recursive: true });
+await cp('src/icons', 'dist/icons', { recursive: true });
 await cp('src/popup/popup.css', 'dist/popup.css');
 const popupHtml = await readFile('src/popup/index.html', 'utf8');
 await writeFile('dist/popup.html', popupHtml);

@@ -10,6 +10,19 @@ npm run validate
 npm run build
 ```
 
+## Prepare a Chrome Web Store release
+
+```bash
+npm ci
+npm run release:prepare
+```
+
+This validates the extension, regenerates all committed icon and store artwork from local SVG sources, and creates `release/quick-translate-0.1.0.zip`. The archive contains `manifest.json` at its root and excludes development source maps. The generator uses macOS `sips` with a local Chrome/Chromium fallback; the committed PNG files are the canonical upload assets because system-font rendering can differ slightly across operating systems.
+
+Submission-ready copy, privacy declarations, reviewer instructions, and the final manual checklist are in [`store-listing`](store-listing). Upload-ready PNG artwork is in [`store-assets/output`](store-assets/output); editable vector sources are in [`store-assets/source`](store-assets/source).
+
+The privacy-policy link in the listing documents points to the `main` branch on GitHub. Merge and push the release changes, then confirm that link opens without authentication before submitting the extension.
+
 ## Install locally
 
 1. Open `chrome://extensions` in Chrome 138 or later.
