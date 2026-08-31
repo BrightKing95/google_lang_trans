@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "assets:generate": "node scripts/generate-store-assets.mjs",
+    "package": "npm run build && node scripts/validate-dist.mjs && node scripts/package-release.mjs",
+    "release:prepare": "npm run assets:generate && npm run validate && node scripts/package-release.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "validate": "npm run typecheck && npm test && npm run build && node scripts/validate-dist.mjs"
+    "validate": "npm run typecheck && npm test && npm run build && node scripts/validate-dist.mjs && node scripts/validate-store-listing.mjs"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",

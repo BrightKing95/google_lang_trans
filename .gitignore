@@ -1,6 +1,8 @@
 node_modules/
 dist/
+/release/
 coverage/
 .superpowers/
 .worktrees/
 *.log
+.DS_Store

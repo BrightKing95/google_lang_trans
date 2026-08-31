@@ -13,6 +13,17 @@ function readJson(file) {
   }
 }
 
+function readPngDimensions(file) {
+  const png = readFileSync(file);
+  if (png.subarray(1, 4).toString('ascii') !== 'PNG') {
+    fail(`${file}: expected a PNG image`);
+  }
+  return {
+    width: png.readUInt32BE(16),
+    height: png.readUInt32BE(20),
+  };
+}
+
 const root = process.argv[2] ?? 'dist';
 const artifact = relative => join(root, relative);
 const manifestFile = artifact('manifest.json');
@@ -30,6 +41,18 @@ if ('background' in manifest) fail('background worker is forbidden');
 if ('host_permissions' in manifest) fail('remote host_permissions are forbidden');
 if (manifest.action?.default_popup !== 'popup.html') {
   fail('action.default_popup must equal popup.html');
+}
+const expectedIcons = {
+  16: 'icons/icon-16.png',
+  32: 'icons/icon-32.png',
+  48: 'icons/icon-48.png',
+  128: 'icons/icon-128.png',
+};
+if (JSON.stringify(manifest.icons) !== JSON.stringify(expectedIcons)) {
+  fail('manifest.icons must declare the 16, 32, 48, and 128 PNG icons');
+}
+if (JSON.stringify(manifest.action?.default_icon) !== JSON.stringify(expectedIcons)) {
+  fail('action.default_icon must use the packaged PNG icons');
 }
 if (manifest.content_scripts?.length !== 1) {
   fail('exactly one content script declaration is required');
@@ -49,6 +72,10 @@ const required = [
   'popup.css',
   '_locales/en/messages.json',
   '_locales/zh_CN/messages.json',
+  'icons/icon-16.png',
+  'icons/icon-32.png',
+  'icons/icon-48.png',
+  'icons/icon-128.png',
 ];
 for (const relative of required) {
   const file = artifact(relative);
@@ -56,6 +83,12 @@ for (const relative of required) {
 }
 readJson(artifact('_locales/en/messages.json'));
 readJson(artifact('_locales/zh_CN/messages.json'));
+for (const size of [16, 32, 48, 128]) {
+  const dimensions = readPngDimensions(artifact(`icons/icon-${size}.png`));
+  if (dimensions.width !== size || dimensions.height !== size) {
+    fail(`icons/icon-${size}.png must be exactly ${size}x${size}`);
+  }
+}
 
 const forbidden = [
   { label: 'remote URL', pattern: /https?:\/\// },
